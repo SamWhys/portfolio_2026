@@ -1,0 +1,452 @@
+<!DOCTYPE html><html lang="en-GB"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>UNIVERSE: a launch site and design system for an education metaverse · Sam Perniskie</title><meta name="description" content="A brand-new education SaaS needed a public face before launch. I designed it end to end (flows, wireframes, and a full component system in four languages) and replaced a signup path that dumped buyers at a sign-in wall with a purchase journey that took a school from pricing page to running its first class."><link rel="canonical" href="https://samwhys.github.io/portfolio_2026/work/universe/"><link rel="preload" href="/portfolio_2026/_astro/fraunces-latin-opsz-normal.DihXLNYH.woff2" as="font" type="font/woff2" crossorigin><link rel="icon" type="image/svg+xml" href="/portfolio_2026/favicon.svg"><link rel="sitemap" href="/portfolio_2026/sitemap-index.xml"><meta name="generator" content="Astro v5.18.2"><script>
+      (function () {
+        if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        document.documentElement.classList.add('reveal-on');
+        function init() {
+          var els = document.querySelectorAll('.reveal, .reveal-block, .type-reveal, .line-reveal, .prose > h2, .hl');
+          if (!els.length) return;
+          // threshold 0 + a bottom rootMargin, NOT a ratio threshold: an
+          // element TALLER than the viewport (the hero headline on a narrow
+          // window) can never reach a 0.35 ratio, so it would never reveal and
+          // its text would strand invisible forever. This fires when the
+          // element crosses 15% up from the bottom edge, at any element size.
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add('is-revealed');
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0, rootMargin: '0px 0px -15% 0px' },
+          );
+          els.forEach(function (el) { io.observe(el); });
+          // Failsafe: text visibility must never depend on the observer. This
+          // replaces an earlier blanket timer that revealed EVERYTHING after
+          // 3s — which fired every below-the-fold heading while it was still
+          // off-screen, so the work-index titles had all animated before the
+          // reader ever reached them. This rescue is viewport-aware: it only
+          // reveals what is genuinely in view, using the same 15%-from-bottom
+          // line as the observer, so in normal operation it changes nothing and
+          // anything further down stays armed until the reader arrives.
+          function rescue() {
+            var pending = 0;
+            for (var i = 0; i < els.length; i++) {
+              var el = els[i];
+              if (el.classList.contains('is-revealed')) continue;
+              var r = el.getBoundingClientRect();
+              if (r.top < window.innerHeight * 0.85 && r.bottom > 0) el.classList.add('is-revealed');
+              else pending++;
+            }
+            if (!pending) window.removeEventListener('scroll', rescue);
+          }
+          window.addEventListener('scroll', rescue, { passive: true });
+          rescue();
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!('IntersectionObserver' in window)) return;
+        // This script lives in <head>, so the hero does not exist yet. Wait for
+        // the DOM, exactly as the reveal observer above does.
+        function init() {
+          var hero = document.querySelector('.hero');
+          if (!hero) return;
+          var root = document.documentElement;
+          new IntersectionObserver(
+            function (entries) {
+              root.classList.toggle('hero-gone', !entries[0].isIntersecting);
+            },
+            // Fire when the hero's last ~12% is leaving, so the masthead
+            // arrives as the headline goes, not after an empty beat.
+            { threshold: 0, rootMargin: '-12% 0px 0px 0px' },
+          ).observe(hero);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+        function fmt(v, decimals, hasComma) {
+          var s = v.toFixed(decimals);
+          if (hasComma) {
+            var parts = s.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            s = parts.join('.');
+          }
+          return s;
+        }
+        function init() {
+          var vals = [].slice.call(document.querySelectorAll('.ledger .value'));
+          var items = [];
+          vals.forEach(function (el) {
+            var full = el.textContent;
+            if (!/\d/.test(full)) return; // no number to roll
+            if (/[→–]/.test(full)) return; // arrow or en-dash range: leave the whole phrase static
+            var m = full.match(/\d[\d,]*\.?\d*/);
+            if (!m) return;
+            var numStr = m[0];
+            var it = {
+              el: el,
+              full: full,
+              target: parseFloat(numStr.replace(/,/g, '')),
+              decimals: (numStr.split('.')[1] || '').length,
+              hasComma: numStr.indexOf(',') !== -1,
+              pre: full.slice(0, m.index),
+              post: full.slice(m.index + numStr.length),
+            };
+            el.textContent = it.pre + fmt(0, it.decimals, it.hasComma) + it.post; // start at 0 (below fold = unseen)
+            items.push(it);
+          });
+          if (!items.length) return;
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                var it;
+                for (var i = 0; i < items.length; i++) if (items[i].el === e.target) it = items[i];
+                if (!it) return;
+                var dur = 1100, t0 = performance.now();
+                (function tick(now) {
+                  var p = Math.min(1, (now - t0) / dur);
+                  var eased = 1 - Math.pow(1 - p, 3); // ease-out: a meter settling, not a slot machine
+                  it.el.textContent = it.pre + fmt(it.target * eased, it.decimals, it.hasComma) + it.post;
+                  if (p < 1) requestAnimationFrame(tick);
+                  else it.el.textContent = it.full; // exact final string
+                })(t0);
+              });
+            },
+            { threshold: 0.6 },
+          );
+          items.forEach(function (it) { io.observe(it.el); });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!window.matchMedia) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // Bare pages (the side quest) are mostly an iframe the ring can't follow into.
+        if (document.documentElement.hasAttribute('data-bare')) return;
+        var fine = matchMedia('(pointer: fine)').matches;
+
+        function init() {
+          var root = document.documentElement;
+          var wrap = document.createElement('div');
+          wrap.className = 'cursor';
+          wrap.setAttribute('aria-hidden', 'true');
+          var ring = null, dot = null;
+          if (fine) {
+            ring = document.createElement('span');
+            ring.className = 'cursor-ring';
+            dot = document.createElement('span');
+            dot.className = 'cursor-dot';
+            wrap.appendChild(ring);
+            wrap.appendChild(dot);
+          }
+          // A small pool, cycled: re-triggering one element's animation would
+          // cut off the previous ping mid-expansion on a fast stop-start.
+          var pings = [], PN = 3;
+          for (var i = 0; i < PN; i++) {
+            var s = document.createElement('span');
+            s.className = 'cursor-ping';
+            wrap.appendChild(s);
+            pings.push(s);
+          }
+          document.body.appendChild(wrap);
+          if (fine) root.classList.add('cursor-on');
+
+          var HOT = 'a,button,[role="button"],summary,label,input,select,textarea';
+          var REST_MS = 140, MOVE_EPS = 2.2, EASE = 0.18;
+          // Pulses fire on DISTANCE travelled, not on a timer, so the rhythm is
+          // set by how far the pointer has gone rather than by how long it has
+          // been held — a slow drag and a fast flick over the same span leave
+          // the same trail of pulses, just at different strengths.
+          var PULSE_DIST = 74, SPEED_EASE = 0.3;
+          var tx = 0, ty = 0, rx = 0, ry = 0;
+          var seen = false, moved = false, lastMove = 0, pi = 0, raf = 0, down = false;
+          var speed = 0, travel = 0, lastT = 0;
+
+          function ping(x, y, sp) {
+            var s = pings[pi];
+            pi = (pi + 1) % PN;
+            s.classList.remove('is-pinging');
+            s.style.left = x + 'px';
+            s.style.top = y + 'px';
+            // The ring's reach and how long it takes to get there both ramp
+            // with speed, so a fast pulse reads as a harder blast.
+            var k = sp > 34 ? 34 : sp;
+            s.style.setProperty('--ping-max', (2.6 + k * 0.11).toFixed(2));
+            s.style.animationDuration = (900 + k * 22).toFixed(0) + 'ms';
+            void s.offsetWidth; // reflow, so the animation restarts
+            s.classList.add('is-pinging');
+            // The smoke field listens for this and seeds motes from the pulse.
+            // Dispatched whether or not anything is listening: the cursor does
+            // not need to know the hero exists.
+            try {
+              dispatchEvent(new CustomEvent('sonar', { detail: { x: x, y: y, speed: sp } }));
+            } catch (err) { /* no CustomEvent constructor: ring still fires */ }
+          }
+
+          function loop(now) {
+            rx += (tx - rx) * EASE;
+            ry += (ty - ry) * EASE;
+            var rest = Math.abs(tx - rx) < 0.1 && Math.abs(ty - ry) < 0.1;
+            if (rest) { rx = tx; ry = ty; }
+            ring.style.translate = rx.toFixed(1) + 'px ' + ry.toFixed(1) + 'px';
+            dot.style.translate = tx.toFixed(1) + 'px ' + ty.toFixed(1) + 'px';
+
+            // The landing pulse. Speed is deliberately NOT zeroed first: the
+            // pulse you get on stopping is sized by how hard you arrived, so
+            // skidding to a halt blooms and drifting to one barely registers.
+            if (moved && now - lastMove > REST_MS) { moved = false; ping(tx, ty, speed); speed = 0; }
+            if (rest && !moved) { raf = 0; return; } // idle: stop burning frames
+            raf = requestAnimationFrame(loop);
+          }
+          // Only the persistent cursor needs a frame loop; the echo animates in
+          // CSS. Guarded so a synthetic mouse event on a touch device can never
+          // start a loop that would dereference a dot and ring that do not exist.
+          function wake() { if (!fine) return; if (!raf) raf = requestAnimationFrame(loop); }
+
+          addEventListener('pointermove', function (e) {
+            var touch = e.pointerType && e.pointerType !== 'mouse';
+            // A finger only draws while it is down — hover does not exist, and
+            // acting on stray touch-moves would trail motes off every scroll.
+            if (touch && !down) return;
+            var now = performance.now();
+            var dx = e.clientX - tx, dy = e.clientY - ty;
+            tx = e.clientX; ty = e.clientY;
+            // The FIRST move must not count: tx/ty start at 0,0, so its delta
+            // is the distance from the page corner and read as a 180 px/frame
+            // flick that fired a full-strength pulse the instant you arrived.
+            if (!seen) {
+              seen = true; rx = tx; ry = ty; lastT = now;
+              wrap.classList.add('is-live');
+              return;
+            }
+            var d = Math.sqrt(dx * dx + dy * dy);
+            // Speed in px per 60fps FRAME, derived from elapsed time rather
+            // than from per-event distance: event rate is a property of the
+            // mouse (125Hz vs 1000Hz), not of how fast the hand is moving, so
+            // measuring per event would have made identical gestures pulse
+            // differently on different hardware.
+            var dtms = now - lastT; lastT = now;
+            var v = dtms > 0 ? (d / dtms) * 16.67 : 0;
+            if (v > 90) v = 90;
+            speed += (v - speed) * SPEED_EASE;
+            if (d > MOVE_EPS) { moved = true; lastMove = now; }
+            // Travelling pulses, so motes are laid down along the path and not
+            // only where the pointer stops.
+            travel += d;
+            if (travel >= PULSE_DIST) { travel = 0; ping(tx, ty, speed); }
+            if (touch) return; // no cursor to move, no hover state to track
+            var t = e.target;
+            root.classList.toggle('cursor-hot', !!(t && t.closest && t.closest(HOT)));
+            wake();
+          }, { passive: true });
+
+          addEventListener('pointerdown', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') {
+              down = true;
+              // Seed the position rather than measuring from it, or the first
+              // move of this touch would read as a flick from wherever the
+              // LAST touch ended — the same bug the cursor had on first entry.
+              tx = e.clientX; ty = e.clientY; lastT = performance.now();
+              seen = true; travel = 0; speed = 0;
+              wrap.classList.add('is-live');
+              ping(tx, ty, 0); // every touch lands its own echo
+              return;
+            }
+            root.classList.add('cursor-down');
+          }, { passive: true });
+          addEventListener('pointerup', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') { down = false; return; }
+            root.classList.remove('cursor-down');
+          }, { passive: true });
+          addEventListener('pointercancel', function () { down = false; }, { passive: true });
+          // Never leave the ring parked at the edge of the window.
+          if (fine) {
+            document.addEventListener('mouseleave', function () { wrap.classList.remove('is-live'); }, { passive: true });
+            document.addEventListener('mouseenter', function () { wrap.classList.add('is-live'); wake(); }, { passive: true });
+          }
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><link rel="stylesheet" href="/portfolio_2026/_astro/about.CytIjRSb.css">
+<style>#figures-heading[data-astro-cid-egj5zfbs]{margin-block-end:var(--space-m)}.label-cell[data-astro-cid-egj5zfbs]{font-family:var(--font-display);font-size:var(--step-1);font-weight:600;letter-spacing:var(--tracking-snug);text-transform:none;color:var(--colour-text-body)}.media-description[data-astro-cid-autsfwhz]{font-size:var(--step--1);color:var(--colour-text-secondary);max-width:var(--measure)}#tldr-heading[data-astro-cid-by4zwojz]{margin-block-end:var(--space-m)}
+</style></head> <body> <a class="skip-link" href="#main">Skip to main content</a> <header class="site-header"> <div class="wrap"> <a class="masthead" href="/portfolio_2026/">Sam Perniskie</a>  <nav class="site-nav" aria-label="Site"> <ul> <li> <a href="/portfolio_2026/#work"> Work </a> </li><li> <a href="/portfolio_2026/about/"> About </a> </li><li> <a href="/portfolio_2026/cv/"> CV </a> </li><li> <a href="/portfolio_2026/side-quest/" class="nav-quest"> Side quest </a> </li> </ul> </nav> </div> </header> <main id="main"> <div class="read-progress" aria-hidden="true" data-astro-cid-by4zwojz></div> <div class="wrap" data-astro-cid-by4zwojz>  <article data-astro-cid-by4zwojz> <header class="study-lead" data-astro-cid-by4zwojz> <div class="headline" data-astro-cid-by4zwojz> <p class="study-kicker label" data-astro-cid-by4zwojz> <span class="num" data-astro-cid-by4zwojz>03</span> <span data-astro-cid-by4zwojz>Case study</span> </p> <h1 class="reveal study-title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">UNIVERSE:</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">a</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">launch</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">site</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">and</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">design</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">system</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">for</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">an</span></span> <span class="reveal-w" style="--wi:9"><span class="reveal-i">education</span></span> <span class="reveal-w" style="--wi:10"><span class="reveal-i">metaverse</span></span></h1> <p class="study-outcome" data-astro-cid-by4zwojz>A brand-new education SaaS needed a public face before launch. I designed it end to end (flows, wireframes, and a full component system in four languages) and replaced a signup path that dumped buyers at a sign-in wall with a purchase journey that took a school from pricing page to running its first class.</p> </div> <dl class="meta"> <div> <dt>Role</dt> <dd>UX/UI Designer</dd> </div> <div> <dt>Team</dt> <dd>Me on UX/UI, with the product, brand, and development teams</dd> </div> <div> <dt>Where &amp; when</dt> <dd>A display-hardware manufacturer, 2022</dd> </div> <div> <dt>Scope</dt> <dd>Public marketing site + design system for a SaaS launch, 4 languages</dd> </div> <div> <dt>I owned</dt> <dd> <ul> <li>User flows, wireframes, high-fidelity design</li><li>The site&#39;s design system (type, colour, components, navigation, CTA blocks)</li><li>Pixel-level handoff to development</li> </ul> </dd> </div> <div> <dt>I influenced</dt> <dd> <ul> <li>The buy and free-trial flow structure</li> </ul> </dd> </div> <div> <dt>Not mine</dt> <dd> <ul> <li>Product pricing and trial policy</li><li>The platform itself</li><li>Post-launch measurement</li> </ul> </dd> </div> </dl> </header> <section class="section tldr" aria-labelledby="tldr-heading" data-astro-cid-by4zwojz> <h2 id="tldr-heading" class="label" data-astro-cid-by4zwojz>In short</h2> <ul data-astro-cid-by4zwojz> <li data-astro-cid-by4zwojz>UNIVERSE is an education-metaverse SaaS: 3D classrooms, spatial audio, teaching tools. The site had to explain a new product category and convert two audiences: try-for-free teachers and buy-now schools.</li><li data-astro-cid-by4zwojz>The original signup flow ended in the wrong places: pricing led to a sign-in wall, three different entry points converged inconsistently. I redesigned it as one continuous journey: account, verification, payment, student import, app download, first sign-in.</li><li data-astro-cid-by4zwojz>I built the design system alongside the pages (type scale, buttons, navigation, footers, CTA blocks, localisation into four languages) so a fast-moving launch surface stayed consistent.</li><li data-astro-cid-by4zwojz>Product decisions were still moving while the site was designed (trial length and pricing were both in flux), so the flows had to absorb change without redesign.</li> </ul> </section>  <section class="section" aria-label="Key artefact" data-astro-cid-by4zwojz> <figure class="media-figure" data-astro-cid-autsfwhz><img src="/portfolio_2026/_astro/flow-refinement.8RnV1XaC_htFLw.webp" srcset="/portfolio_2026/_astro/flow-refinement.8RnV1XaC_htFLw.webp 700w" alt="Two flow diagrams, before and after. The original flow: eight boxes where pricing leads to a sign-in wall and three entry points converge inconsistently. The refined buy-now flow: a continuous seventeen-step path from home page through package choice, account creation, email verification, payment, purchase confirmation, student import, app download, and first sign-in." sizes="(max-width: 76rem) 100vw, 72rem" loading="eager" data-astro-cid-autsfwhz="true" decoding="async" fetchpriority="auto" width="700" height="700"><figcaption data-astro-cid-autsfwhz>The decision that mattered: the original flow (top) treated &quot;buy&quot; as a click; the refined flow (bottom) treats it as the whole journey a school actually takes, from pricing to running the first class.</figcaption></figure><script>
+  (function () {
+    // Progressive enhancement only. No <dialog> support means the inline video
+    // and the native player's own fullscreen button are what you get.
+    if (typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
+
+    var sheet = document.querySelector('.media-sheet');
+    var home = document.querySelector('.media-stage');
+    if (!sheet || !home) return;
+    var stage = sheet.querySelector('[data-sheet-stage]');
+    var vid = home.querySelector('video');
+    var opener = home.querySelector('[data-sheet-open]');
+    var closer = sheet.querySelector('[data-sheet-close]');
+    if (!stage || !vid || !opener || !closer) return;
+
+    opener.hidden = false;
+
+    // Moving a <video> between parents resets playback in some engines, so
+    // carry the position and the playing state across by hand.
+    function move(to, first) {
+      var at = vid.currentTime;
+      var playing = !vid.paused && !vid.ended;
+      if (first) to.insertBefore(vid, to.firstChild);
+      else to.appendChild(vid);
+      if (at) vid.currentTime = at;
+      if (playing) {
+        var p = vid.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+    }
+
+    opener.addEventListener('click', function () {
+      move(stage, false);
+      sheet.showModal();
+    });
+    closer.addEventListener('click', function () {
+      sheet.close();
+    });
+    // Clicking the backdrop lands on the dialog element itself.
+    sheet.addEventListener('click', function (e) {
+      if (e.target === sheet) sheet.close();
+    });
+    // Restore on ANY close path. Deliberately not the 'close' event: measured
+    // in a current engine that closes the dialog without dispatching either
+    // 'close' or 'cancel', which left the video stranded in a hidden dialog
+    // and the figure empty. Watching the open attribute is path-independent
+    // and catches the button, the backdrop, Esc and anything added later.
+    function restore() {
+      if (!sheet.open && stage.contains(vid)) move(home, true);
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(restore).observe(sheet, {
+        attributes: true,
+        attributeFilter: ['open'],
+      });
+    }
+    // Harmless if the engine does fire it, and covers a browser with no
+    // MutationObserver.
+    sheet.addEventListener('close', restore);
+  })();
+</script> </section> <div class="section prose" data-astro-cid-by4zwojz> <p><strong>What I owned:</strong> the flows, the wireframes, the visual system, and the
+handoff. The product, its pricing, and its trial policy belonged to the
+product team.</p>
+<p><em>Anonymised: the employer’s name is withheld; the product is public and keeps
+its name. Everything else is as it happened.</em></p>
+<h2 id="the-problem-and-what-was-at-risk">The problem, and what was at risk</h2>
+<p>UNIVERSE launched into a category most buyers had never purchased from: a
+metaverse platform dedicated to education. The site carried a double burden:
+explain an unfamiliar product credibly enough for schools to spend budget on
+it, and make trying it frictionless enough that individual teachers would
+self-serve. A confusing path on either side wasn’t a cosmetic problem; for a
+brand-new SaaS, the site effectively <em>was</em> the sales team.</p>
+<h2 id="constraints">Constraints</h2>
+<p>The product was pre-launch and still moving: trial length and pricing were
+both live questions while the site was being designed; the artefacts show a
+seven-day trial in one place and a ten-day trial being explored in another.
+The site also had to ship in four languages (English, Traditional Chinese,
+Spanish, German) and hold together visually while pages were added at launch
+speed.</p>
+<h2 id="what-i-decided-and-what-i-didnt">What I decided, and what I didn’t</h2>
+<p><strong>I rebuilt the buy flow as a journey, not a button.</strong> The original flow had
+the classic pre-launch shape: entry points bolted on one at a time; pricing
+led to a sign-in wall, “try for free” and “learn more” converged on the same
+account screen from different directions, and nothing past account creation
+was designed at all. The rejected option was to patch it, entry by entry.
+Instead I mapped the full journey a school actually takes (choose a package,
+create an account, verify email, pay, get the invoice, import students,
+download the app, sign in) and designed each step as part of one path. The
+before-and-after is the artefact I’d show first from this project.</p>
+<p><strong>I built the system with the pages, not after them.</strong> Type scale, colour,
+buttons and their states, navigation and footer for desktop and mobile, CTA
+blocks, the language switcher, componentised from the start, because a
+launch surface with moving product decisions burns designers who hand-craft
+every page. When trial copy or pricing shifted, the change was a content
+edit, not a redesign.</p>
+<p><img alt="The design system board: colour swatches, a full button matrix across light and dark, the Inter-based type scale, logo lockups, desktop and mobile navigation with an open four-language switcher, footers, icon atoms, and CTA blocks." loading="lazy" decoding="async" fetchpriority="auto" width="2400" height="1120" src="/portfolio_2026/_astro/design-system.BvARe2eZ_Z15qDk9.webp" ></p>
+<p><strong>I framed features as classroom jobs, not tech specs.</strong> The product pages
+lead with what a teacher does (manage the class, switch lecture mode to
+discussion mode, keep students engaged), with the 3D render as supporting
+evidence, not the pitch. For an audience sceptical of metaverse hype, the
+concrete-job framing was the credibility play.</p>
+<p><img alt="A product section titled &quot;Manage Your Class&quot;: three feature cards (Active Study Mode with lecture and discussion modes, Attention Measurement, Integrated Teaching Tools) beside a 3D render of a virtual classroom with avatar students." loading="lazy" decoding="async" fetchpriority="auto" width="2200" height="1400" src="/portfolio_2026/_astro/manage-your-class.CXXdbv-z_ZggpQu.webp" ></p>
+<h2 id="what-happened">What happened</h2>
+<p>The site shipped with the platform’s 2022 launch, in four languages, on the
+design system above. What I can’t show you is a conversion or traffic number:
+post-launch measurement wasn’t part of my scope, and this site’s own rule is
+that a number without a method doesn’t get printed. The evidence this study
+stands on is the artefacts (the flow rebuild and the system) and the fact
+that they shipped.</p> </div> <aside class="side-quest-path" aria-labelledby="side-quest-heading" data-astro-cid-by4zwojz> <p id="side-quest-heading" class="label" data-astro-cid-by4zwojz>Side quest</p> <p data-astro-cid-by4zwojz>
+This work is chapter 3 of <em data-astro-cid-by4zwojz>How I transformed the company</em>, a short
+              arcade game about how my team's work changed.
+</p> <a class="btn btn--ghost" href="/portfolio_2026/side-quest/#chapter-3" data-astro-cid-by4zwojz>
+Play chapter 3 →
+</a> </aside> <footer class="study-next" data-astro-cid-by4zwojz> <a href="/portfolio_2026/#work" data-astro-cid-by4zwojz>← Index</a> <a href="/portfolio_2026/work/colorpro/" data-astro-cid-by4zwojz>Next: ColorPro: turning a product catalogue into a creator community →</a> </footer> </article> </div>  </main> <footer class="site-footer">  <div class="wrap"> <p class="label footer-kicker">Contact</p> <p class="footer-cta">
+Got something to take end to end?<br> <a href="mailto:sperniskie@gmail.com">sperniskie@gmail.com</a> </p> <div class="footer-cols"> <nav aria-label="Footer"> <ul> <li><a href="/portfolio_2026/#work">Work</a></li> <li><a href="/portfolio_2026/about/">About</a></li> <li><a href="/portfolio_2026/cv/">CV</a></li> <li><a href="https://www.linkedin.com/in/sam-perniskie">LinkedIn</a></li> <li><a href="https://www.behance.net/SamPerniskie">Behance</a></li> <li><a href="/portfolio_2026/accessibility/">Accessibility statement</a></li> </ul> </nav> <p class="colophon"> Sam Perniskie · Taipei, Taiwan. Set in Fraunces, Source Serif 4 &amp; IBM Plex Mono.
+            Hand-built in Astro: no tracking, every figure evidence-tagged, no frameworks,
+            no bundled JavaScript, only hand-written inline scripts.
+<a href="/portfolio_2026/side-quest/" aria-label="Insert coin: play Metal Slide, a short arcade game about my team's work">Insert coin.</a> </p> </div> </div> </footer> <aside class="ms-invite" id="ms-invite" aria-label="Easter egg" style="--sam: url(/portfolio_2026/media/metal-slide/sam-invite.png)" hidden> <div class="ms-invite-bubble"> <p class="ms-invite-ask">Are you ready for an adventure?</p> <div class="ms-invite-actions"> <a class="btn btn--fill" href="/portfolio_2026/side-quest/">Let's go!</a> <button type="button" class="btn btn--ghost" data-invite-close>Not now</button> </div> </div> <span class="ms-invite-sam" aria-hidden="true"></span> </aside> <script>
+      (function () {
+        var el = document.getElementById('ms-invite');
+        if (!el || !window.requestAnimationFrame) return;
+        var KEY = 'metalSlide.invite';
+        function get(store) { try { return window[store].getItem(KEY); } catch (e) { return null; } }
+        function put(store, v) { try { window[store].setItem(KEY, v); } catch (e) { /* not remembered */ } }
+        // Once per visit (this tab's session). A "played" flag from the old
+        // never-again rule may still sit in localStorage: it is ignored now.
+        if (get('sessionStorage')) return;
+        var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Only scrolling the visitor does counts: a scroll position the browser
+        // restores on load comes before any wheel, touch, key or click.
+        var acted = false, timer = 0;
+        function act() { acted = true; }
+        ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (t) {
+          addEventListener(t, act, { passive: true, capture: true });
+        });
+
+        // About 80ms after the visitor starts scrolling, and never over an open dialog.
+        function onScroll() {
+          if (!acted || timer) return;
+          timer = setTimeout(function () {
+            timer = 0;
+            if (!document.querySelector('dialog[open]')) show();
+          }, 80);
+        }
+        function show() {
+          removeEventListener('scroll', onScroll);
+          put('sessionStorage', 'shown');
+          el.hidden = false;
+          requestAnimationFrame(function () { el.classList.add('is-in'); });
+        }
+        function hide() {
+          if (el.hidden || el.classList.contains('is-out')) return;
+          el.classList.remove('is-in');
+          el.classList.add('is-out');
+          setTimeout(function () { el.hidden = true; }, still ? 0 : 320);
+        }
+        el.querySelector('[data-invite-close]').addEventListener('click', hide);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && !el.hidden && !document.querySelector('dialog[open]')) hide();
+        });
+        document.addEventListener('focusin', function (e) {
+          if (el.hidden || el.contains(e.target) || !e.target.getBoundingClientRect) return;
+          var a = el.getBoundingClientRect(), b = e.target.getBoundingClientRect();
+          if (b.right > a.left && b.left < a.right && b.bottom > a.top && b.top < a.bottom) hide();
+        });
+        addEventListener('scroll', onScroll, { passive: true });
+      })();
+    </script>  </body> </html> 

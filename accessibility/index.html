@@ -1,0 +1,413 @@
+<!DOCTYPE html><html lang="en-GB"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Accessibility statement · Sam Perniskie</title><meta name="description" content="What this site targets (WCAG 2.2 AA), what was actually tested, and the known issues."><link rel="canonical" href="https://samwhys.github.io/portfolio_2026/accessibility/"><link rel="preload" href="/portfolio_2026/_astro/fraunces-latin-opsz-normal.DihXLNYH.woff2" as="font" type="font/woff2" crossorigin><link rel="icon" type="image/svg+xml" href="/portfolio_2026/favicon.svg"><link rel="sitemap" href="/portfolio_2026/sitemap-index.xml"><meta name="generator" content="Astro v5.18.2"><script>
+      (function () {
+        if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        document.documentElement.classList.add('reveal-on');
+        function init() {
+          var els = document.querySelectorAll('.reveal, .reveal-block, .type-reveal, .line-reveal, .prose > h2, .hl');
+          if (!els.length) return;
+          // threshold 0 + a bottom rootMargin, NOT a ratio threshold: an
+          // element TALLER than the viewport (the hero headline on a narrow
+          // window) can never reach a 0.35 ratio, so it would never reveal and
+          // its text would strand invisible forever. This fires when the
+          // element crosses 15% up from the bottom edge, at any element size.
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add('is-revealed');
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0, rootMargin: '0px 0px -15% 0px' },
+          );
+          els.forEach(function (el) { io.observe(el); });
+          // Failsafe: text visibility must never depend on the observer. This
+          // replaces an earlier blanket timer that revealed EVERYTHING after
+          // 3s — which fired every below-the-fold heading while it was still
+          // off-screen, so the work-index titles had all animated before the
+          // reader ever reached them. This rescue is viewport-aware: it only
+          // reveals what is genuinely in view, using the same 15%-from-bottom
+          // line as the observer, so in normal operation it changes nothing and
+          // anything further down stays armed until the reader arrives.
+          function rescue() {
+            var pending = 0;
+            for (var i = 0; i < els.length; i++) {
+              var el = els[i];
+              if (el.classList.contains('is-revealed')) continue;
+              var r = el.getBoundingClientRect();
+              if (r.top < window.innerHeight * 0.85 && r.bottom > 0) el.classList.add('is-revealed');
+              else pending++;
+            }
+            if (!pending) window.removeEventListener('scroll', rescue);
+          }
+          window.addEventListener('scroll', rescue, { passive: true });
+          rescue();
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!('IntersectionObserver' in window)) return;
+        // This script lives in <head>, so the hero does not exist yet. Wait for
+        // the DOM, exactly as the reveal observer above does.
+        function init() {
+          var hero = document.querySelector('.hero');
+          if (!hero) return;
+          var root = document.documentElement;
+          new IntersectionObserver(
+            function (entries) {
+              root.classList.toggle('hero-gone', !entries[0].isIntersecting);
+            },
+            // Fire when the hero's last ~12% is leaving, so the masthead
+            // arrives as the headline goes, not after an empty beat.
+            { threshold: 0, rootMargin: '-12% 0px 0px 0px' },
+          ).observe(hero);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+        function fmt(v, decimals, hasComma) {
+          var s = v.toFixed(decimals);
+          if (hasComma) {
+            var parts = s.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            s = parts.join('.');
+          }
+          return s;
+        }
+        function init() {
+          var vals = [].slice.call(document.querySelectorAll('.ledger .value'));
+          var items = [];
+          vals.forEach(function (el) {
+            var full = el.textContent;
+            if (!/\d/.test(full)) return; // no number to roll
+            if (/[→–]/.test(full)) return; // arrow or en-dash range: leave the whole phrase static
+            var m = full.match(/\d[\d,]*\.?\d*/);
+            if (!m) return;
+            var numStr = m[0];
+            var it = {
+              el: el,
+              full: full,
+              target: parseFloat(numStr.replace(/,/g, '')),
+              decimals: (numStr.split('.')[1] || '').length,
+              hasComma: numStr.indexOf(',') !== -1,
+              pre: full.slice(0, m.index),
+              post: full.slice(m.index + numStr.length),
+            };
+            el.textContent = it.pre + fmt(0, it.decimals, it.hasComma) + it.post; // start at 0 (below fold = unseen)
+            items.push(it);
+          });
+          if (!items.length) return;
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                var it;
+                for (var i = 0; i < items.length; i++) if (items[i].el === e.target) it = items[i];
+                if (!it) return;
+                var dur = 1100, t0 = performance.now();
+                (function tick(now) {
+                  var p = Math.min(1, (now - t0) / dur);
+                  var eased = 1 - Math.pow(1 - p, 3); // ease-out: a meter settling, not a slot machine
+                  it.el.textContent = it.pre + fmt(it.target * eased, it.decimals, it.hasComma) + it.post;
+                  if (p < 1) requestAnimationFrame(tick);
+                  else it.el.textContent = it.full; // exact final string
+                })(t0);
+              });
+            },
+            { threshold: 0.6 },
+          );
+          items.forEach(function (it) { io.observe(it.el); });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!window.matchMedia) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // Bare pages (the side quest) are mostly an iframe the ring can't follow into.
+        if (document.documentElement.hasAttribute('data-bare')) return;
+        var fine = matchMedia('(pointer: fine)').matches;
+
+        function init() {
+          var root = document.documentElement;
+          var wrap = document.createElement('div');
+          wrap.className = 'cursor';
+          wrap.setAttribute('aria-hidden', 'true');
+          var ring = null, dot = null;
+          if (fine) {
+            ring = document.createElement('span');
+            ring.className = 'cursor-ring';
+            dot = document.createElement('span');
+            dot.className = 'cursor-dot';
+            wrap.appendChild(ring);
+            wrap.appendChild(dot);
+          }
+          // A small pool, cycled: re-triggering one element's animation would
+          // cut off the previous ping mid-expansion on a fast stop-start.
+          var pings = [], PN = 3;
+          for (var i = 0; i < PN; i++) {
+            var s = document.createElement('span');
+            s.className = 'cursor-ping';
+            wrap.appendChild(s);
+            pings.push(s);
+          }
+          document.body.appendChild(wrap);
+          if (fine) root.classList.add('cursor-on');
+
+          var HOT = 'a,button,[role="button"],summary,label,input,select,textarea';
+          var REST_MS = 140, MOVE_EPS = 2.2, EASE = 0.18;
+          // Pulses fire on DISTANCE travelled, not on a timer, so the rhythm is
+          // set by how far the pointer has gone rather than by how long it has
+          // been held — a slow drag and a fast flick over the same span leave
+          // the same trail of pulses, just at different strengths.
+          var PULSE_DIST = 74, SPEED_EASE = 0.3;
+          var tx = 0, ty = 0, rx = 0, ry = 0;
+          var seen = false, moved = false, lastMove = 0, pi = 0, raf = 0, down = false;
+          var speed = 0, travel = 0, lastT = 0;
+
+          function ping(x, y, sp) {
+            var s = pings[pi];
+            pi = (pi + 1) % PN;
+            s.classList.remove('is-pinging');
+            s.style.left = x + 'px';
+            s.style.top = y + 'px';
+            // The ring's reach and how long it takes to get there both ramp
+            // with speed, so a fast pulse reads as a harder blast.
+            var k = sp > 34 ? 34 : sp;
+            s.style.setProperty('--ping-max', (2.6 + k * 0.11).toFixed(2));
+            s.style.animationDuration = (900 + k * 22).toFixed(0) + 'ms';
+            void s.offsetWidth; // reflow, so the animation restarts
+            s.classList.add('is-pinging');
+            // The smoke field listens for this and seeds motes from the pulse.
+            // Dispatched whether or not anything is listening: the cursor does
+            // not need to know the hero exists.
+            try {
+              dispatchEvent(new CustomEvent('sonar', { detail: { x: x, y: y, speed: sp } }));
+            } catch (err) { /* no CustomEvent constructor: ring still fires */ }
+          }
+
+          function loop(now) {
+            rx += (tx - rx) * EASE;
+            ry += (ty - ry) * EASE;
+            var rest = Math.abs(tx - rx) < 0.1 && Math.abs(ty - ry) < 0.1;
+            if (rest) { rx = tx; ry = ty; }
+            ring.style.translate = rx.toFixed(1) + 'px ' + ry.toFixed(1) + 'px';
+            dot.style.translate = tx.toFixed(1) + 'px ' + ty.toFixed(1) + 'px';
+
+            // The landing pulse. Speed is deliberately NOT zeroed first: the
+            // pulse you get on stopping is sized by how hard you arrived, so
+            // skidding to a halt blooms and drifting to one barely registers.
+            if (moved && now - lastMove > REST_MS) { moved = false; ping(tx, ty, speed); speed = 0; }
+            if (rest && !moved) { raf = 0; return; } // idle: stop burning frames
+            raf = requestAnimationFrame(loop);
+          }
+          // Only the persistent cursor needs a frame loop; the echo animates in
+          // CSS. Guarded so a synthetic mouse event on a touch device can never
+          // start a loop that would dereference a dot and ring that do not exist.
+          function wake() { if (!fine) return; if (!raf) raf = requestAnimationFrame(loop); }
+
+          addEventListener('pointermove', function (e) {
+            var touch = e.pointerType && e.pointerType !== 'mouse';
+            // A finger only draws while it is down — hover does not exist, and
+            // acting on stray touch-moves would trail motes off every scroll.
+            if (touch && !down) return;
+            var now = performance.now();
+            var dx = e.clientX - tx, dy = e.clientY - ty;
+            tx = e.clientX; ty = e.clientY;
+            // The FIRST move must not count: tx/ty start at 0,0, so its delta
+            // is the distance from the page corner and read as a 180 px/frame
+            // flick that fired a full-strength pulse the instant you arrived.
+            if (!seen) {
+              seen = true; rx = tx; ry = ty; lastT = now;
+              wrap.classList.add('is-live');
+              return;
+            }
+            var d = Math.sqrt(dx * dx + dy * dy);
+            // Speed in px per 60fps FRAME, derived from elapsed time rather
+            // than from per-event distance: event rate is a property of the
+            // mouse (125Hz vs 1000Hz), not of how fast the hand is moving, so
+            // measuring per event would have made identical gestures pulse
+            // differently on different hardware.
+            var dtms = now - lastT; lastT = now;
+            var v = dtms > 0 ? (d / dtms) * 16.67 : 0;
+            if (v > 90) v = 90;
+            speed += (v - speed) * SPEED_EASE;
+            if (d > MOVE_EPS) { moved = true; lastMove = now; }
+            // Travelling pulses, so motes are laid down along the path and not
+            // only where the pointer stops.
+            travel += d;
+            if (travel >= PULSE_DIST) { travel = 0; ping(tx, ty, speed); }
+            if (touch) return; // no cursor to move, no hover state to track
+            var t = e.target;
+            root.classList.toggle('cursor-hot', !!(t && t.closest && t.closest(HOT)));
+            wake();
+          }, { passive: true });
+
+          addEventListener('pointerdown', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') {
+              down = true;
+              // Seed the position rather than measuring from it, or the first
+              // move of this touch would read as a flick from wherever the
+              // LAST touch ended — the same bug the cursor had on first entry.
+              tx = e.clientX; ty = e.clientY; lastT = performance.now();
+              seen = true; travel = 0; speed = 0;
+              wrap.classList.add('is-live');
+              ping(tx, ty, 0); // every touch lands its own echo
+              return;
+            }
+            root.classList.add('cursor-down');
+          }, { passive: true });
+          addEventListener('pointerup', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') { down = false; return; }
+            root.classList.remove('cursor-down');
+          }, { passive: true });
+          addEventListener('pointercancel', function () { down = false; }, { passive: true });
+          // Never leave the ring parked at the edge of the window.
+          if (fine) {
+            document.addEventListener('mouseleave', function () { wrap.classList.remove('is-live'); }, { passive: true });
+            document.addEventListener('mouseenter', function () { wrap.classList.add('is-live'); wake(); }, { passive: true });
+          }
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><link rel="stylesheet" href="/portfolio_2026/_astro/about.CytIjRSb.css"></head> <body> <a class="skip-link" href="#main">Skip to main content</a> <header class="site-header"> <div class="wrap"> <a class="masthead" href="/portfolio_2026/">Sam Perniskie</a>  <nav class="site-nav" aria-label="Site"> <ul> <li> <a href="/portfolio_2026/#work"> Work </a> </li><li> <a href="/portfolio_2026/about/"> About </a> </li><li> <a href="/portfolio_2026/cv/"> CV </a> </li><li> <a href="/portfolio_2026/side-quest/" class="nav-quest"> Side quest </a> </li> </ul> </nav> </div> </header> <main id="main">  <div class="wrap--reading wrap"> <p class="label">Accessibility</p> <h1 class="reveal page-title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">Accessibility</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">statement</span></span></h1> <div class="prose flow"> <p>
+I own accessibility professionally, so this site holds itself to the standard I hold other
+        people's work to: <strong>WCAG 2.2 Level AA as the floor</strong>, verified rather than
+        assumed, with AAA taken where it's cheap: the focus indicator meets the enhanced
+        focus-appearance criterion, and the long-form case-study text targets 7:1 contrast rather
+        than 4.5:1.
+</p> <h2>What was tested, and with what</h2> <ul> <li>
+Automated checks: axe-core and HTML_CodeSniffer (via pa11y) run against every built page
+          on every production build, alongside a build gate that fails if unresolved content
+          markers survive into HTML. Zero automated violations is a build requirement, and the
+          start of testing rather than the end of it.
+</li> <li>
+Manual checks on every page: full keyboard walkthrough including the skip link, reduced
+          motion, 320&nbsp;px reflow, 400% zoom, and <code>forced-colors</code> mode for focus
+          rings and evidence-chip borders.
+</li> <li>
+Motion is CSS-driven: entrance choreography, scroll reveals, a reading-progress bar,
+          page crossfades, and a scroll-linked light-to-dark inversion on the home work index.
+          Hand-written scripts assist (a drag-and-parallax gradient and an animated smoke
+          field on the home hero, an IntersectionObserver that triggers the heading reveals,
+          and a figure count-up on case studies; no frameworks, no tracking, no bundle).
+          Under <code>prefers-reduced-motion: reduce</code> all
+          of it is removed, not slowed, and the scripts disarm themselves. Without JavaScript
+          or scroll-timeline support you simply see the content, because text is only hidden
+          when the reveal is armed: nothing can strand invisible.
+</li> <li>
+On a mouse or trackpad the system cursor is replaced with a custom dot and ring.
+          That trades away the familiar pointer-hand, so the ring restores the same signal by
+          growing and changing colour over anything clickable. It is only applied to a fine
+          pointer, and never under <code>prefers-reduced-motion: reduce</code> or on touch,
+          where the system cursor is left exactly as it is. Keyboard focus is untouched:
+          focus rings are drawn by the browser and do not depend on any of this.
+</li> <li>
+The inversion is engineered so that stopping mid-scroll can never leave you on
+          low-contrast text: the type unifies, flips sides in a single step against a ground that
+          holds 4.5:1 with both sides, then the palette returns in the dark. An automated sweep
+          parks the page at sixty scroll positions and verifies every text voice stays at or above
+          4.5:1; it runs as part of this site's checks.
+</li> </ul> <h2>Known issues and limits</h2> <ul> <li> <strong>The home hero does not currently meet AA.</strong> Its headline and intro sit
+          over a deliberately vivid, moving gradient, so their contrast is below 4.5:1 in places
+          and shifts as the gradient drifts. This is a temporary, deliberate exploration of the
+          visual direction, not an oversight. It's flagged here rather than hidden, and it's the
+          top item on the site's own fix list. Every other surface, including the case-study list
+          as it falls into twilight, holds AA. If the hero is hard to read for you, the same words
+          open every case study below it.
+</li> <li>
+A full screen-reader pass (VoiceOver with Safari) has been run informally, not as a
+          scripted audit against the headings, landmarks, and links lists. That scripted pass is
+          the next item on this site's own backlog. A statement with no known issues is a statement
+          nobody wrote.
+</li> <li>
+The prototype video in the VISTA study is a silent recording. It carries a prose
+          description (WCAG 1.2.1) plus a one-cue caption track whose only job is to tell caption
+          users there is no audio to miss. If narrated media is ever added, authored captions come
+          with it.
+</li> <li> <strong>The side quest (the Metal Slide game) is drawn on a canvas.</strong> It runs
+          under the site's header, so the way back is always one link away, and its world map's
+          chapters, descriptions and Play now buttons are real buttons and links. Its pixel lettering is an
+          image, so it doesn't follow your text-size settings or translate, though it scales with
+          the window and pinch-zoom works on phones. To make up for that, every line of dialogue
+          and each turn to play is read out to screen readers, the Next button finishes any play
+          section for you, and its Options panel (Escape) turns off the idle demo, reduces motion
+          and switches off the letter-key shortcuts. Nobody needs fast reflexes to see the story.
+          An invitation to it (the game's hero asking if you're ready for an adventure) slides in
+          from the right once per visit, as soon as you start scrolling. It never takes focus,
+          Escape or Not now puts it away, and it steps aside if keyboard focus lands beneath it.
+</li> </ul> <h2>What does not apply here</h2> <p>
+This site has no authentication, so 3.3.8 Accessible Authentication does not apply. The
+        only draggable thing is the home hero gradient, a decorative flourish: no functionality
+        depends on dragging, so 2.5.7 Dragging Movements is satisfied. It has no forms (contact
+        is a mail link), so 3.3.7 Redundant Entry does not apply. These are stated rather than
+        silently omitted.
+</p> <h2>Feedback</h2> <p>
+If anything here fails for you (a trap, an unreadable contrast, a control your assistive
+        tech can't reach), I want to know:
+<a href="mailto:sperniskie@gmail.com?subject=Accessibility%20feedback">sperniskie@gmail.com</a>.
+</p> <p><em>Statement last reviewed: July 2026.</em></p> </div> </div>  </main> <footer class="site-footer">  <div class="wrap"> <p class="label footer-kicker">Contact</p> <p class="footer-cta">
+Got something to take end to end?<br> <a href="mailto:sperniskie@gmail.com">sperniskie@gmail.com</a> </p> <div class="footer-cols"> <nav aria-label="Footer"> <ul> <li><a href="/portfolio_2026/#work">Work</a></li> <li><a href="/portfolio_2026/about/">About</a></li> <li><a href="/portfolio_2026/cv/">CV</a></li> <li><a href="https://www.linkedin.com/in/sam-perniskie">LinkedIn</a></li> <li><a href="https://www.behance.net/SamPerniskie">Behance</a></li> <li><a href="/portfolio_2026/accessibility/">Accessibility statement</a></li> </ul> </nav> <p class="colophon"> Sam Perniskie · Taipei, Taiwan. Set in Fraunces, Source Serif 4 &amp; IBM Plex Mono.
+            Hand-built in Astro: no tracking, every figure evidence-tagged, no frameworks,
+            no bundled JavaScript, only hand-written inline scripts.
+<a href="/portfolio_2026/side-quest/" aria-label="Insert coin: play Metal Slide, a short arcade game about my team's work">Insert coin.</a> </p> </div> </div> </footer> <aside class="ms-invite" id="ms-invite" aria-label="Easter egg" style="--sam: url(/portfolio_2026/media/metal-slide/sam-invite.png)" hidden> <div class="ms-invite-bubble"> <p class="ms-invite-ask">Are you ready for an adventure?</p> <div class="ms-invite-actions"> <a class="btn btn--fill" href="/portfolio_2026/side-quest/">Let's go!</a> <button type="button" class="btn btn--ghost" data-invite-close>Not now</button> </div> </div> <span class="ms-invite-sam" aria-hidden="true"></span> </aside> <script>
+      (function () {
+        var el = document.getElementById('ms-invite');
+        if (!el || !window.requestAnimationFrame) return;
+        var KEY = 'metalSlide.invite';
+        function get(store) { try { return window[store].getItem(KEY); } catch (e) { return null; } }
+        function put(store, v) { try { window[store].setItem(KEY, v); } catch (e) { /* not remembered */ } }
+        // Once per visit (this tab's session). A "played" flag from the old
+        // never-again rule may still sit in localStorage: it is ignored now.
+        if (get('sessionStorage')) return;
+        var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Only scrolling the visitor does counts: a scroll position the browser
+        // restores on load comes before any wheel, touch, key or click.
+        var acted = false, timer = 0;
+        function act() { acted = true; }
+        ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (t) {
+          addEventListener(t, act, { passive: true, capture: true });
+        });
+
+        // About 80ms after the visitor starts scrolling, and never over an open dialog.
+        function onScroll() {
+          if (!acted || timer) return;
+          timer = setTimeout(function () {
+            timer = 0;
+            if (!document.querySelector('dialog[open]')) show();
+          }, 80);
+        }
+        function show() {
+          removeEventListener('scroll', onScroll);
+          put('sessionStorage', 'shown');
+          el.hidden = false;
+          requestAnimationFrame(function () { el.classList.add('is-in'); });
+        }
+        function hide() {
+          if (el.hidden || el.classList.contains('is-out')) return;
+          el.classList.remove('is-in');
+          el.classList.add('is-out');
+          setTimeout(function () { el.hidden = true; }, still ? 0 : 320);
+        }
+        el.querySelector('[data-invite-close]').addEventListener('click', hide);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && !el.hidden && !document.querySelector('dialog[open]')) hide();
+        });
+        document.addEventListener('focusin', function (e) {
+          if (el.hidden || el.contains(e.target) || !e.target.getBoundingClientRect) return;
+          var a = el.getBoundingClientRect(), b = e.target.getBoundingClientRect();
+          if (b.right > a.left && b.left < a.right && b.bottom > a.top && b.top < a.bottom) hide();
+        });
+        addEventListener('scroll', onScroll, { passive: true });
+      })();
+    </script>  </body> </html>

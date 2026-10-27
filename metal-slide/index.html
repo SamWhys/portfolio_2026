@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Metal Slide</title>
+<meta name="description" content="A Metal Slug-inspired, click-through story: from building websites off PowerPoint decks to prototyping the future.">
+<meta name="theme-color" content="#050308">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #050308; color: #fff; }
+  body { overflow: hidden; font-family: system-ui, -apple-system, Segoe UI, sans-serif; }
+  #app { position: relative; width: 100vw; height: 100vh; height: 100dvh; display: grid; place-items: center; background: #050308; }
+  #stage { position: relative; width: 384px; height: 216px; touch-action: pinch-zoom; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; cursor: pointer; overflow: hidden; }
+  #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #world { image-rendering: pixelated; image-rendering: crisp-edges; }
+  #fx { pointer-events: none; mix-blend-mode: screen; }
+
+  /* Era looks: the cave is an old CRT, the kingdom gets a warm vignette, later eras are clean. */
+  .crt { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .8s; }
+  #stage[data-era="stone"] .crt {
+    opacity: 1;
+    background:
+      repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--px, 4px) * .62), rgba(0,0,0,.30) calc(var(--px, 4px) * .62), rgba(0,0,0,.30) var(--px, 4px)),
+      radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,.6) 100%);
+    animation: flicker 5s steps(1) infinite;
+  }
+  #stage[data-era="medieval"] .crt { opacity: 1; background: radial-gradient(ellipse at center, transparent 58%, rgba(50,24,0,.38) 100%); }
+  #stage[data-era="title"] .crt {
+    opacity: 1;
+    background: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--px, 4px) * .62), rgba(0,0,0,.18) calc(var(--px, 4px) * .62), rgba(0,0,0,.18) var(--px, 4px));
+  }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 48% { opacity: .93; } 50% { opacity: 1; } 73% { opacity: .96; } }
+
+  #stage { width: 1px; height: 1px; }
+  .controls { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: var(--g, 8px); z-index: 5; transition: opacity .3s; }
+  .controls.side { flex-direction: column; transform: translate(-50%, -50%); }
+  .controls.side.stack { display: grid; grid-template-columns: repeat(2, 40px); transform: translateX(-50%); }
+  .controls.over { opacity: .35; }
+  #app.awake .controls.over, .controls.over:focus-within, .controls.over:hover { opacity: 1; }
+  @media (pointer: coarse) { .controls.over { opacity: .85; } }
+  .controls button {
+    width: var(--b, 40px); height: var(--b, 40px); padding: 0; display: grid; place-items: center; cursor: pointer;
+    background: rgba(12, 14, 36, .82); color: #fff; border: 2px solid #fff; border-radius: 0;
+  }
+  .controls button:hover { background: rgba(42, 74, 208, .9); }
+  .controls button:focus-visible { outline: 3px solid #ffd23a; outline-offset: 2px; }
+  .controls svg { width: calc(var(--b, 40px) / 2); height: calc(var(--b, 40px) / 2); shape-rendering: crispEdges; fill: currentColor; }
+  .controls .off { display: none; }
+  .controls button.muted .on { display: none; }
+  .controls button.muted .off { display: block; }
+
+  .controls button[data-act="watch"][aria-pressed="true"] { background: #ffd23a; color: #1a1020; }
+
+  /* Touch play is gestures on the picture (input.js): tap fires, swipe up jumps, swipe down
+     ducks. iOS: no double-tap zoom on the buttons, no rubber-band bounce, no text inflation
+     in landscape. Pinch-zoom on the game stays (#stage). #safe only carries the notch
+     insets for main.js to read. */
+  html { -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
+  body, .controls button, .map button, .map a { touch-action: manipulation; }
+  #safe { display: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #app.touch.playing .rotate { display: none; }
+
+  .rotate { display: none; position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 4;
+    background: rgba(10, 8, 20, .9); color: #fff; padding: 8px 12px; font: 600 14px/1.3 system-ui, sans-serif; border: 2px solid #ffd23a; white-space: nowrap; }
+  @media (orientation: portrait) and (pointer: coarse) { .rotate { display: block; } }
+
+  #error { position: absolute; inset: auto 16px 16px 16px; background: #3a0d12; border: 2px solid #ff6a6a; padding: 12px; font: 14px/1.4 system-ui, sans-serif; z-index: 9; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @media (prefers-reduced-motion: reduce) { .crt { animation: none !important; } .controls { transition: none; } }
+  /* The world map (engine/mapui.js): HTML chapter buttons, cards and pathway signs laid
+     over the painted map, sized from the stage scale (--px) so they track the art. */
+  .map { position: absolute; z-index: 7; pointer-events: none; }
+  .map > * { pointer-events: auto; }
+  .map ol, .map ul { pointer-events: none; }
+  .map li { pointer-events: auto; }
+  .map[hidden], .map-card[hidden] { display: none; }
+  .map ol, .map ul { list-style: none; margin: 0; padding: 0; }
+  .map-chapter, .map-sign { position: absolute; transform: translate(-50%, -50%); }
+  .map-chapter.open { z-index: 5; } /* the open card paints over the other labels */
+  .map-place { display: inline-flex; align-items: center; gap: .4em; min-height: 24px; white-space: nowrap; cursor: pointer;
+    padding: calc(var(--px, 3px) * 1.1) calc(var(--px, 3px) * 2.4); font: 800 max(11px, calc(var(--px, 3px) * 5.2))/1 ui-monospace, 'SF Mono', Menlo, monospace;
+    letter-spacing: .04em; color: #fff; background: rgba(12, 14, 36, .9); border: 2px solid #fff; box-shadow: 0 3px 0 #0b0810; }
+  .map-place:hover, .map-chapter.open .map-place { background: #2a4ad0; }
+  .map-chapter.here .map-place { border-color: #ffd23a; }
+  .map-num { display: inline-grid; place-items: center; min-width: 1.5em; height: 1.5em; background: #ffd23a; color: #1a1020; }
+  .map-tick { color: #7fe0a0; }
+  .map-card { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(calc(-50% + var(--shift, 0px))); z-index: 2;
+    width: clamp(220px, calc(var(--px, 3px) * 150), 380px); padding: 12px 14px; text-align: left; color: #fff; background: #141832;
+    border: 2px solid #fff; box-shadow: 0 0 0 3px #1e2448, 0 8px 0 3px rgba(0, 0, 0, .5); font: 400 max(13px, calc(var(--px, 3px) * 5))/1.4 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .map-chapter.below .map-card { bottom: auto; top: calc(100% + 8px); }
+  .map-card { overflow-y: auto; overscroll-behavior: contain; }
+  .map-chapter.side-left .map-card, .map-chapter.side-right .map-card { top: 50%; bottom: auto; transform: translateY(calc(-50% + var(--vshift, 0px))); }
+  .map-chapter.side-right .map-card { left: calc(100% + 8px); }
+  .map-chapter.side-left .map-card { left: auto; right: calc(100% + 8px); }
+  /* An invisible bridge over the 8px gap between label and open card, so moving the
+     pointer from one to the other never counts as leaving (mapui.js). */
+  .map-chapter.open::after { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 12px; }
+  .map-chapter.open.below::after { bottom: auto; top: 100%; }
+  .map-chapter.open.side-right::after { left: 100%; right: auto; top: 0; bottom: 0; width: 12px; height: auto; }
+  .map-chapter.open.side-left::after { right: 100%; left: auto; top: 0; bottom: 0; width: 12px; height: auto; }
+  @media (max-height: 430px) {
+    .map-card { padding: 8px 10px; font-size: 12px; width: clamp(220px, 46vw, 340px); }
+    .map-brief { margin-bottom: 6px; }
+    .map-play { min-height: 32px; padding: 6px 12px; }
+    .map-paths { margin-top: 6px; }
+  }
+  .map-kicker { margin: 0; color: #ffd23a; font: 800 .8em/1.2 ui-monospace, 'SF Mono', Menlo, monospace; text-transform: uppercase; letter-spacing: .06em; }
+  .map-card-title { margin: 2px 0 6px; font-size: 1.15em; line-height: 1.2; }
+  .map-brief { margin: 0 0 10px; color: #dfe3ff; }
+  .map-play { min-height: 40px; padding: 8px 16px; font: 800 1em/1 ui-monospace, 'SF Mono', Menlo, monospace; text-transform: uppercase; letter-spacing: .06em;
+    color: #1a1020; background: #ffd23a; border: 2px solid #fff; cursor: pointer; box-shadow: 0 3px 0 #0b0810; }
+  .map-play::after { content: ' \25B6'; }
+  .map-play:hover { background: #ffe680; }
+  .map-paths { margin: 10px 0 0; font-size: .9em; color: #dfe3ff; }
+  .map-paths-label { color: #ffd23a; font-weight: 700; }
+  .map-paths a, .map-sign a { color: #fff; }
+  .map-sign a { display: inline-grid; place-items: center; min-height: 24px; padding: 0 calc(var(--px, 3px) * 1.6); white-space: nowrap; text-decoration: none;
+    font: 700 max(10px, calc(var(--px, 3px) * 4.4))/1 ui-monospace, 'SF Mono', Menlo, monospace; background: #6b4226; border: 2px solid #2a1a10; box-shadow: 0 2px 0 #0b0810; }
+  .map-sign a:hover { background: #8a5a30; text-decoration: underline; }
+  .map.compact .map-signs { display: none; }
+  .map.compact .map-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .map.compact .map-place { padding: 2px; min-width: 28px; min-height: 28px; justify-content: center; }
+  .map.compact .map-num { min-width: 22px; height: 22px; }
+  .map button:focus-visible, .map a:focus-visible { outline: 3px solid #ffd23a; outline-offset: 2px; }
+  .map .map-play:focus-visible { outline-color: #fff; }
+  #app.on-map .controls [data-act="back"], #app.on-map .controls [data-act="next"], #app.on-map .controls [data-act="map"] { display: none; }
+
+  /* Case-study links on a mission's results screen (CASE STUDY: lines in script.js). */
+  .links { position: absolute; z-index: 5; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px;
+    transform: translate(-50%, -100%); font: 700 clamp(12px, calc(var(--px, 3px) * 5), 18px)/1.2 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .links[hidden] { display: none; }
+  .links .cap { color: #ffd23a; text-transform: uppercase; letter-spacing: .06em; text-shadow: 0 2px 0 #0b0810; }
+  .links a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 10px; color: #fff; background: #2a4ad0;
+    border: 2px solid #fff; text-decoration: none; box-shadow: 0 3px 0 #0b0810; }
+  .links a:hover { background: #3a5ae0; }
+  .links a:focus-visible { outline: 3px solid #ffd23a; outline-offset: 2px; }
+  .links a svg { width: .8em; height: .8em; fill: currentColor; shape-rendering: crispEdges; }
+  #app.reduced .crt { animation: none !important; }
+  #app.reduced .controls { transition: none; }
+
+  /* Options: a native modal dialog (focus stays inside, Escape closes it). */
+  #options { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 20px;
+    background: #141832; color: #fff; border: 2px solid #fff; box-shadow: 0 0 0 4px #1e2448, 0 8px 0 4px rgba(0, 0, 0, .5);
+    font: 16px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+  #options::backdrop { background: rgba(5, 3, 8, .72); }
+  #options h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; color: #ffd23a; }
+  #options .paused { margin: 0 0 12px; color: #c8d0ff; font-size: 14px; }
+  #options .opt { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid #2f3770; cursor: pointer; }
+  #options .opt b { display: block; font-size: 16px; }
+  #options .opt span { color: #c8d0ff; font-size: 14px; }
+  #options .opt b { color: #fff; }
+  #options input[type="checkbox"] { width: 24px; height: 24px; margin: 0; accent-color: #ffd23a; cursor: pointer; }
+  #options input:focus-visible, #options .done:focus-visible { outline: 3px solid #ffd23a; outline-offset: 3px; }
+  #options .done { margin-top: 12px; min-width: 120px; min-height: 44px; padding: 8px 16px; font: 700 16px/1 system-ui, sans-serif;
+    text-transform: uppercase; letter-spacing: .06em; background: #2a4ad0; color: #fff; border: 2px solid #fff; cursor: pointer; }
+  #options .done:hover { background: #3a5ae0; }
+  @media (max-height: 480px) {
+    #options { padding: 12px 18px; width: min(560px, calc(100vw - 32px)); }
+    #options .paused { margin-bottom: 4px; }
+    #options .opt { padding: 7px 0; }
+    #options .done { margin-top: 6px; min-height: 40px; }
+  }
+</style>
+</head>
+<body>
+<main id="app">
+  <h1 class="sr-only">Metal Slide: a click-through story game</h1>
+  <p class="sr-only">In story scenes, press the right arrow, D, Space, Enter, Z, X or J, or click or tap, for the next line, and the left arrow, A, Page Up or Backspace to go back. Between scenes you play: the arrow keys or A and D move, Up, W, X, K or Space jump, Z, J or Enter fire Sam's weapon, which changes with each era, from a slingshot in the cave to a laser in the future, and Down or S crouches. Page Down also works: in play, the first press runs Sam there by himself and the second skips ahead. On a touch screen, tap for the next line and swipe right to go back; in play Sam runs by himself, a tap fires, a swipe up jumps and a swipe down crouches. M mutes, F is fullscreen, 1 to 5 jump to a chapter and 0 to the title. After the title comes a world map, How I transformed the company: each chapter is a button that opens a short description with Play now and pathways to the case studies behind it, and the World map button brings you back to it. If nobody plays for 30 seconds the game plays itself; any key takes over again, and the Watch the story button turns that on or off. Escape or the Options button opens options: turn off the idle demo, reduce motion, or turn off the letter-key shortcuts. Each line of dialogue is read out below the game, and you are told when it is your turn to play. Some missions end with links to the case study behind them, after the game's buttons.</p>
+  <div id="stage" data-era="title">
+    <canvas id="world" width="384" height="216" role="img" aria-label="Pixel-art game scene. Dialogue appears in the live text region."></canvas>
+    <canvas id="fx" aria-hidden="true"></canvas>
+    <div class="crt" aria-hidden="true"></div>
+  </div>
+  <div class="controls over" id="controls">
+    <button type="button" data-act="back" aria-label="Back">
+      <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M5 1h1v6H5V6H4V5H3V3h1V2h1z"/></svg>
+    </button>
+    <button type="button" data-act="next" aria-label="Next">
+      <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M2 1h1v1h1v1h1v2H4v1H3v1H2z"/></svg>
+    </button>
+    <button type="button" data-act="map" aria-label="World map">
+      <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M2 0h4v1H2zM1 1h1v1H1zM3 1h1v1H3zM6 1h1v1H6zM0 2h1v1H0zM3 2h1v1H3zM7 2h1v1H7zM0 3h8v1H0zM0 4h1v1H0zM3 4h1v1H3zM7 4h1v1H7zM1 5h1v1H1zM3 5h1v1H3zM6 5h1v1H6zM2 6h4v1H2z"/></svg>
+    </button>
+    <button type="button" data-act="watch" aria-label="Watch the story" aria-pressed="false">
+      <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M2 1h4v1H2zM1 2h1v1H1zM6 2h1v1H6zM0 3h1v2H0zM7 3h1v2H7zM3 3h2v2H3zM1 5h1v1H1zM6 5h1v1H6zM2 6h4v1H2z"/></svg>
+    </button>
+    <button type="button" data-act="sound" aria-label="Mute sound" aria-pressed="false">
+      <svg class="on" viewBox="0 0 8 8" aria-hidden="true"><path d="M0 3h2V2h1V1h1v6H3V6H2V5H0zM5 3h1v2H5zM6 2h1v4H6z"/></svg>
+      <svg class="off" viewBox="0 0 8 8" aria-hidden="true"><path d="M0 3h2V2h1V1h1v6H3V6H2V5H0zM5 2h1v1h1V2h1v1H7v1h1v1H7v1H6V5H5V4h1V3H5z"/></svg>
+    </button>
+    <button type="button" data-act="options" aria-label="Options" aria-haspopup="dialog">
+      <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M2 0h1v1H2zM5 0h1v1H5zM1 1h6v1H1zM1 2h2v1H1zM5 2h2v1H5zM0 3h3v2H0zM5 3h3v2H5zM1 5h2v1H1zM5 5h2v1H5zM1 6h6v1H1zM2 7h1v1H2zM5 7h1v1H5z"/></svg>
+    </button>
+    <button type="button" data-act="full" aria-label="Fullscreen">
+      <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M0 0h3v1H1v2H0zM5 0h3v3H7V1H5zM0 5h1v2h2v1H0zM7 5h1v3H5V7h2z"/></svg>
+    </button>
+  </div>
+  <nav class="links" id="links" aria-label="Case studies" hidden></nav>
+  <div id="safe" aria-hidden="true"></div>
+  <div class="rotate" aria-hidden="true">Turn your phone sideways for a bigger screen</div>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+  <dialog id="options" aria-labelledby="options-title">
+    <form method="dialog">
+      <h2 id="options-title">Options</h2>
+      <p class="paused">The game is paused while this is open.</p>
+      <label class="opt"><input type="checkbox" id="opt-demo">
+        <span><b>Demo when idle</b>Plays the story by itself after 30 seconds without input.</span></label>
+      <label class="opt"><input type="checkbox" id="opt-motion">
+        <span><b>Reduce motion</b>No screen shake, flashes, flicker, bouncing or camera sweeps. Text appears at once.</span></label>
+      <label class="opt"><input type="checkbox" id="opt-keys">
+        <span><b>Letter-key shortcuts</b>WASD, Z, X, J, K, M, F, number keys and backquote. Off leaves the arrow keys, Space, Enter, Escape and Page Up or Down.</span></label>
+      <button type="submit" class="done">Done</button>
+    </form>
+  </dialog>
+  <div id="error" role="alert" hidden></div>
+  <noscript><p style="padding:16px">This little game needs JavaScript to run.</p></noscript>
+</main>
+<script src="engine/core.js"></script>
+<script src="engine/font.js"></script>
+<script src="engine/parser.js"></script>
+<script src="engine/directions.js"></script>
+<script src="engine/world.js"></script>
+<script src="engine/player.js"></script>
+<script src="engine/enemies.js"></script>
+<script src="engine/director.js"></script>
+<script src="engine/audio.js"></script>
+<script src="art/palettes.js"></script>
+<script src="art/paint.js"></script>
+<script src="art/rig.js"></script>
+<script src="art/costumes.js"></script>
+<script src="art/props.js"></script>
+<script src="art/playfx.js"></script>
+<script src="art/sets/title.js"></script>
+<script src="art/sets/cave.js"></script>
+<script src="art/sets/kingdom.js"></script>
+<script src="art/sets/city.js"></script>
+<script src="art/sets/siege.js"></script>
+<script src="art/sets/future.js"></script>
+<script src="art/worldmap.js"></script>
+<script src="engine/ui.js"></script>
+<script src="engine/mapui.js"></script>
+<script src="engine/render.js"></script>
+<script src="engine/input.js"></script>
+<script src="script.js"></script>
+<script src="engine/main.js"></script>
+</body>
+</html>

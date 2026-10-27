@@ -1,0 +1,1020 @@
+<!DOCTYPE html><html lang="en-GB"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sam Perniskie · Senior Product Designer</title><meta name="description" content="Senior product designer: design systems, accessibility, and the design-to-engineering handoff. Case studies with evidence-labelled results."><link rel="canonical" href="https://samwhys.github.io/portfolio_2026"><link rel="preload" href="/portfolio_2026/_astro/fraunces-latin-opsz-normal.DihXLNYH.woff2" as="font" type="font/woff2" crossorigin><link rel="icon" type="image/svg+xml" href="/portfolio_2026/favicon.svg"><link rel="sitemap" href="/portfolio_2026/sitemap-index.xml"><meta name="generator" content="Astro v5.18.2"><script>
+      (function () {
+        if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        document.documentElement.classList.add('reveal-on');
+        function init() {
+          var els = document.querySelectorAll('.reveal, .reveal-block, .type-reveal, .line-reveal, .prose > h2, .hl');
+          if (!els.length) return;
+          // threshold 0 + a bottom rootMargin, NOT a ratio threshold: an
+          // element TALLER than the viewport (the hero headline on a narrow
+          // window) can never reach a 0.35 ratio, so it would never reveal and
+          // its text would strand invisible forever. This fires when the
+          // element crosses 15% up from the bottom edge, at any element size.
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add('is-revealed');
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0, rootMargin: '0px 0px -15% 0px' },
+          );
+          els.forEach(function (el) { io.observe(el); });
+          // Failsafe: text visibility must never depend on the observer. This
+          // replaces an earlier blanket timer that revealed EVERYTHING after
+          // 3s — which fired every below-the-fold heading while it was still
+          // off-screen, so the work-index titles had all animated before the
+          // reader ever reached them. This rescue is viewport-aware: it only
+          // reveals what is genuinely in view, using the same 15%-from-bottom
+          // line as the observer, so in normal operation it changes nothing and
+          // anything further down stays armed until the reader arrives.
+          function rescue() {
+            var pending = 0;
+            for (var i = 0; i < els.length; i++) {
+              var el = els[i];
+              if (el.classList.contains('is-revealed')) continue;
+              var r = el.getBoundingClientRect();
+              if (r.top < window.innerHeight * 0.85 && r.bottom > 0) el.classList.add('is-revealed');
+              else pending++;
+            }
+            if (!pending) window.removeEventListener('scroll', rescue);
+          }
+          window.addEventListener('scroll', rescue, { passive: true });
+          rescue();
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!('IntersectionObserver' in window)) return;
+        // This script lives in <head>, so the hero does not exist yet. Wait for
+        // the DOM, exactly as the reveal observer above does.
+        function init() {
+          var hero = document.querySelector('.hero');
+          if (!hero) return;
+          var root = document.documentElement;
+          new IntersectionObserver(
+            function (entries) {
+              root.classList.toggle('hero-gone', !entries[0].isIntersecting);
+            },
+            // Fire when the hero's last ~12% is leaving, so the masthead
+            // arrives as the headline goes, not after an empty beat.
+            { threshold: 0, rootMargin: '-12% 0px 0px 0px' },
+          ).observe(hero);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+        function fmt(v, decimals, hasComma) {
+          var s = v.toFixed(decimals);
+          if (hasComma) {
+            var parts = s.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            s = parts.join('.');
+          }
+          return s;
+        }
+        function init() {
+          var vals = [].slice.call(document.querySelectorAll('.ledger .value'));
+          var items = [];
+          vals.forEach(function (el) {
+            var full = el.textContent;
+            if (!/\d/.test(full)) return; // no number to roll
+            if (/[→–]/.test(full)) return; // arrow or en-dash range: leave the whole phrase static
+            var m = full.match(/\d[\d,]*\.?\d*/);
+            if (!m) return;
+            var numStr = m[0];
+            var it = {
+              el: el,
+              full: full,
+              target: parseFloat(numStr.replace(/,/g, '')),
+              decimals: (numStr.split('.')[1] || '').length,
+              hasComma: numStr.indexOf(',') !== -1,
+              pre: full.slice(0, m.index),
+              post: full.slice(m.index + numStr.length),
+            };
+            el.textContent = it.pre + fmt(0, it.decimals, it.hasComma) + it.post; // start at 0 (below fold = unseen)
+            items.push(it);
+          });
+          if (!items.length) return;
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                var it;
+                for (var i = 0; i < items.length; i++) if (items[i].el === e.target) it = items[i];
+                if (!it) return;
+                var dur = 1100, t0 = performance.now();
+                (function tick(now) {
+                  var p = Math.min(1, (now - t0) / dur);
+                  var eased = 1 - Math.pow(1 - p, 3); // ease-out: a meter settling, not a slot machine
+                  it.el.textContent = it.pre + fmt(it.target * eased, it.decimals, it.hasComma) + it.post;
+                  if (p < 1) requestAnimationFrame(tick);
+                  else it.el.textContent = it.full; // exact final string
+                })(t0);
+              });
+            },
+            { threshold: 0.6 },
+          );
+          items.forEach(function (it) { io.observe(it.el); });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!window.matchMedia) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // Bare pages (the side quest) are mostly an iframe the ring can't follow into.
+        if (document.documentElement.hasAttribute('data-bare')) return;
+        var fine = matchMedia('(pointer: fine)').matches;
+
+        function init() {
+          var root = document.documentElement;
+          var wrap = document.createElement('div');
+          wrap.className = 'cursor';
+          wrap.setAttribute('aria-hidden', 'true');
+          var ring = null, dot = null;
+          if (fine) {
+            ring = document.createElement('span');
+            ring.className = 'cursor-ring';
+            dot = document.createElement('span');
+            dot.className = 'cursor-dot';
+            wrap.appendChild(ring);
+            wrap.appendChild(dot);
+          }
+          // A small pool, cycled: re-triggering one element's animation would
+          // cut off the previous ping mid-expansion on a fast stop-start.
+          var pings = [], PN = 3;
+          for (var i = 0; i < PN; i++) {
+            var s = document.createElement('span');
+            s.className = 'cursor-ping';
+            wrap.appendChild(s);
+            pings.push(s);
+          }
+          document.body.appendChild(wrap);
+          if (fine) root.classList.add('cursor-on');
+
+          var HOT = 'a,button,[role="button"],summary,label,input,select,textarea';
+          var REST_MS = 140, MOVE_EPS = 2.2, EASE = 0.18;
+          // Pulses fire on DISTANCE travelled, not on a timer, so the rhythm is
+          // set by how far the pointer has gone rather than by how long it has
+          // been held — a slow drag and a fast flick over the same span leave
+          // the same trail of pulses, just at different strengths.
+          var PULSE_DIST = 74, SPEED_EASE = 0.3;
+          var tx = 0, ty = 0, rx = 0, ry = 0;
+          var seen = false, moved = false, lastMove = 0, pi = 0, raf = 0, down = false;
+          var speed = 0, travel = 0, lastT = 0;
+
+          function ping(x, y, sp) {
+            var s = pings[pi];
+            pi = (pi + 1) % PN;
+            s.classList.remove('is-pinging');
+            s.style.left = x + 'px';
+            s.style.top = y + 'px';
+            // The ring's reach and how long it takes to get there both ramp
+            // with speed, so a fast pulse reads as a harder blast.
+            var k = sp > 34 ? 34 : sp;
+            s.style.setProperty('--ping-max', (2.6 + k * 0.11).toFixed(2));
+            s.style.animationDuration = (900 + k * 22).toFixed(0) + 'ms';
+            void s.offsetWidth; // reflow, so the animation restarts
+            s.classList.add('is-pinging');
+            // The smoke field listens for this and seeds motes from the pulse.
+            // Dispatched whether or not anything is listening: the cursor does
+            // not need to know the hero exists.
+            try {
+              dispatchEvent(new CustomEvent('sonar', { detail: { x: x, y: y, speed: sp } }));
+            } catch (err) { /* no CustomEvent constructor: ring still fires */ }
+          }
+
+          function loop(now) {
+            rx += (tx - rx) * EASE;
+            ry += (ty - ry) * EASE;
+            var rest = Math.abs(tx - rx) < 0.1 && Math.abs(ty - ry) < 0.1;
+            if (rest) { rx = tx; ry = ty; }
+            ring.style.translate = rx.toFixed(1) + 'px ' + ry.toFixed(1) + 'px';
+            dot.style.translate = tx.toFixed(1) + 'px ' + ty.toFixed(1) + 'px';
+
+            // The landing pulse. Speed is deliberately NOT zeroed first: the
+            // pulse you get on stopping is sized by how hard you arrived, so
+            // skidding to a halt blooms and drifting to one barely registers.
+            if (moved && now - lastMove > REST_MS) { moved = false; ping(tx, ty, speed); speed = 0; }
+            if (rest && !moved) { raf = 0; return; } // idle: stop burning frames
+            raf = requestAnimationFrame(loop);
+          }
+          // Only the persistent cursor needs a frame loop; the echo animates in
+          // CSS. Guarded so a synthetic mouse event on a touch device can never
+          // start a loop that would dereference a dot and ring that do not exist.
+          function wake() { if (!fine) return; if (!raf) raf = requestAnimationFrame(loop); }
+
+          addEventListener('pointermove', function (e) {
+            var touch = e.pointerType && e.pointerType !== 'mouse';
+            // A finger only draws while it is down — hover does not exist, and
+            // acting on stray touch-moves would trail motes off every scroll.
+            if (touch && !down) return;
+            var now = performance.now();
+            var dx = e.clientX - tx, dy = e.clientY - ty;
+            tx = e.clientX; ty = e.clientY;
+            // The FIRST move must not count: tx/ty start at 0,0, so its delta
+            // is the distance from the page corner and read as a 180 px/frame
+            // flick that fired a full-strength pulse the instant you arrived.
+            if (!seen) {
+              seen = true; rx = tx; ry = ty; lastT = now;
+              wrap.classList.add('is-live');
+              return;
+            }
+            var d = Math.sqrt(dx * dx + dy * dy);
+            // Speed in px per 60fps FRAME, derived from elapsed time rather
+            // than from per-event distance: event rate is a property of the
+            // mouse (125Hz vs 1000Hz), not of how fast the hand is moving, so
+            // measuring per event would have made identical gestures pulse
+            // differently on different hardware.
+            var dtms = now - lastT; lastT = now;
+            var v = dtms > 0 ? (d / dtms) * 16.67 : 0;
+            if (v > 90) v = 90;
+            speed += (v - speed) * SPEED_EASE;
+            if (d > MOVE_EPS) { moved = true; lastMove = now; }
+            // Travelling pulses, so motes are laid down along the path and not
+            // only where the pointer stops.
+            travel += d;
+            if (travel >= PULSE_DIST) { travel = 0; ping(tx, ty, speed); }
+            if (touch) return; // no cursor to move, no hover state to track
+            var t = e.target;
+            root.classList.toggle('cursor-hot', !!(t && t.closest && t.closest(HOT)));
+            wake();
+          }, { passive: true });
+
+          addEventListener('pointerdown', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') {
+              down = true;
+              // Seed the position rather than measuring from it, or the first
+              // move of this touch would read as a flick from wherever the
+              // LAST touch ended — the same bug the cursor had on first entry.
+              tx = e.clientX; ty = e.clientY; lastT = performance.now();
+              seen = true; travel = 0; speed = 0;
+              wrap.classList.add('is-live');
+              ping(tx, ty, 0); // every touch lands its own echo
+              return;
+            }
+            root.classList.add('cursor-down');
+          }, { passive: true });
+          addEventListener('pointerup', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') { down = false; return; }
+            root.classList.remove('cursor-down');
+          }, { passive: true });
+          addEventListener('pointercancel', function () { down = false; }, { passive: true });
+          // Never leave the ring parked at the edge of the window.
+          if (fine) {
+            document.addEventListener('mouseleave', function () { wrap.classList.remove('is-live'); }, { passive: true });
+            document.addEventListener('mouseenter', function () { wrap.classList.add('is-live'); wake(); }, { passive: true });
+          }
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><link rel="stylesheet" href="/portfolio_2026/_astro/about.CytIjRSb.css">
+<style>.study-cover[data-astro-cid-c7ejcnps]{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:var(--space-m);aspect-ratio:4 / 3;padding:var(--space-l);border-radius:var(--radius-glass);overflow:hidden;background-color:var(--from);background-image:linear-gradient(148deg,var(--from),var(--to));color:var(--paper-0);isolation:isolate}.study-cover[data-astro-cid-c7ejcnps]:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:var(--grain);background-size:160px 160px;opacity:.16;mix-blend-mode:overlay}.study-cover[data-astro-cid-c7ejcnps]:before{content:"";position:absolute;inset-block-end:-26%;inset-inline-end:-16%;z-index:0;width:58%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.22),transparent 70%);pointer-events:none}.sc-scrim[data-astro-cid-c7ejcnps]{position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(to bottom,#00000061,#0003 40%,#00000029 68%,#00000057)}.sc-title[data-astro-cid-c7ejcnps],.sc-foot[data-astro-cid-c7ejcnps]{position:relative;z-index:1;margin:0}.sc-title[data-astro-cid-c7ejcnps]{font-family:var(--font-display);font-weight:600;line-height:1.02;letter-spacing:var(--tracking-tight);text-wrap:balance}.study-cover[data-astro-cid-c7ejcnps][data-size=lg] .sc-title[data-astro-cid-c7ejcnps]{font-size:var(--step-4)}.study-cover[data-astro-cid-c7ejcnps][data-size=md] .sc-title[data-astro-cid-c7ejcnps]{font-size:var(--step-3)}.study-cover[data-astro-cid-c7ejcnps][data-size=sm] .sc-title[data-astro-cid-c7ejcnps]{font-size:var(--step-2)}.sc-foot[data-astro-cid-c7ejcnps]{font-family:var(--font-mono);font-size:var(--step--1);font-weight:500;letter-spacing:var(--tracking-label);font-variant-numeric:tabular-nums}
+</style></head> <body> <a class="skip-link" href="#main">Skip to main content</a> <header class="site-header"> <div class="wrap"> <a class="masthead" href="/portfolio_2026/">Sam Perniskie</a> <p class="masthead-tag" aria-hidden="true">
+Design that ships, <em>with receipts</em>.
+</p> <nav class="site-nav" aria-label="Site"> <ul> <li> <a href="/portfolio_2026/#work"> Work </a> </li><li> <a href="/portfolio_2026/about/"> About </a> </li><li> <a href="/portfolio_2026/cv/"> CV </a> </li><li> <a href="/portfolio_2026/side-quest/" class="nav-quest"> Side quest </a> </li> </ul> </nav> </div> </header> <main id="main"> <div class="hero-field"> <div class="hero-mesh" aria-hidden="true"> <span class="hero-blob b-indigo"></span> <span class="hero-blob b-cobalt"></span> <span class="hero-blob b-violet"></span> <span class="hero-blob b-magenta"></span> <span class="hero-blob b-rose"></span> <span class="hero-blob b-coral"></span> <span class="hero-blob b-amber"></span> </div>  <canvas class="hero-motes" aria-hidden="true"></canvas> <div class="hero-grain" aria-hidden="true"></div> <section class="hero" aria-labelledby="positioning"> <div class="wrap"> <p class="label kicker">Sam Perniskie · Senior Product Designer</p>  <h1 id="positioning" class="positioning reveal"> <span class="reveal-w" style="--wi:0"><span class="reveal-i">Design</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">that</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">ships,</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i"><em>with</em></span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i"><em>receipts</em>.</span></span> </h1>  <p style="--line-delay:650ms" class="line-reveal lede"><span class="lr-inner">I bring UX to teams at the moment it matters most. Some don&#39;t know they need it yet; afterwards, they&#39;re the ones making the case for it.</span></p> <ul class="owns" role="list" aria-label="What I own"> <li>design systems</li> <li>accessibility</li> <li>design-to-engineering handoff</li> <li>research that ships</li> </ul> <div class="hero-ctas"> <a class="btn btn--fill" href="#work">View work</a> <a class="btn btn--ghost" href="#contact">Get in touch</a> </div> </div> <p class="hero-hint" aria-hidden="true">move to explore</p> </section> </div><section id="work" class="work-band" aria-labelledby="work-heading"> <div class="wrap"> <div class="index-head"> <h2 id="work-heading" class="reveal"><span class="reveal-w" style="--wi:0"><span class="reveal-i">Selected</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">work</span></span></h2> <p class="label">5 case studies</p> </div>  <div class="work-layout"> <ol class="work-index"> <li class="work-item"> <a href="/portfolio_2026/work/vista-hr/"> <div class="body"> <h3 class="reveal title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">VISTA:</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">making</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">an</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">AI</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">HR</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">tool</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">usable</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">before</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">it</span></span> <span class="reveal-w" style="--wi:9"><span class="reveal-i">shipped</span></span> <span class="reveal-w" style="--wi:10"><span class="reveal-i">to</span></span> <span class="reveal-w" style="--wi:11"><span class="reveal-i">1,000</span></span> <span class="reveal-w" style="--wi:12"><span class="reveal-i">people</span></span></h3>  <p style="--line-delay:300ms" class="line-reveal outcome"><span class="lr-inner">A product team was about to roll a vibe-coded HR platform out to the whole company with no onboarding and no UX input. I turned a team that didn&#39;t want UX into one that commissioned three rounds of research, led the redesign of the core flows, and the redesigned tool shipped company-wide.</span></p> <p class="row-receipt"> <span class="rr-value">63 → 65.8</span> <span class="rr-label">SUS, core flow</span> <span class="chip chip--measured">measured</span> </p> <p class="row-meta"> UX/UI Lead · A display-hardware manufacturer · 2026  </p> <p class="row-cta"> Read the case study<span class="arrow" aria-hidden="true">→</span> </p> </div> <div class="thumb"> <div class="study-cover" data-size="lg" style="--from:#b0459a;--to:#6e2460" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Internal platform, 1,000+ employees</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2026</p> </div>  </div> </a> </li><li class="work-item"> <a href="/portfolio_2026/work/ar-sales-tool/"> <div class="body"> <h3 class="reveal title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">An</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">AR</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">sales</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">tool</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">that</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">put</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">the</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">product</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">in</span></span> <span class="reveal-w" style="--wi:9"><span class="reveal-i">the</span></span> <span class="reveal-w" style="--wi:10"><span class="reveal-i">room,</span></span> <span class="reveal-w" style="--wi:11"><span class="reveal-i">not</span></span> <span class="reveal-w" style="--wi:12"><span class="reveal-i">on</span></span> <span class="reveal-w" style="--wi:13"><span class="reveal-i">a</span></span> <span class="reveal-w" style="--wi:14"><span class="reveal-i">truck</span></span></h3>  <p style="--line-delay:300ms" class="line-reveal outcome"><span class="lr-inner">Sales teams were shipping large-format display units around the world to win early-stage conversations. I designed an internal AR tool that put the product in the client&#39;s space instead, scoped to an MVP that survived regional politics, validated with the sales reps who&#39;d use it, and shipped as a shared platform for global sales teams.</span></p> <p class="row-receipt"> <span class="rr-value">4 of 5</span> <span class="rr-label">Usability mission completion</span> <span class="chip chip--measured">measured</span> </p> <p class="row-meta"> UX/UI Designer · A display-hardware manufacturer · 2023  </p> <p class="row-cta"> Read the case study<span class="arrow" aria-hidden="true">→</span> </p> </div> <div class="thumb"> <div class="study-cover" data-size="md" style="--from:#e0603a;--to:#c9327f" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Internal mobile AR tool for global sales teams</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2023</p> </div>  </div> </a> </li><li class="work-item"> <a href="/portfolio_2026/work/universe/"> <div class="body"> <h3 class="reveal title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">UNIVERSE:</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">a</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">launch</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">site</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">and</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">design</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">system</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">for</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">an</span></span> <span class="reveal-w" style="--wi:9"><span class="reveal-i">education</span></span> <span class="reveal-w" style="--wi:10"><span class="reveal-i">metaverse</span></span></h3>  <p style="--line-delay:300ms" class="line-reveal outcome"><span class="lr-inner">A brand-new education SaaS needed a public face before launch. I designed it end to end (flows, wireframes, and a full component system in four languages) and replaced a signup path that dumped buyers at a sign-in wall with a purchase journey that took a school from pricing page to running its first class.</span></p>  <p class="row-meta"> UX/UI Designer · A display-hardware manufacturer · 2022  </p> <p class="row-cta"> Read the case study<span class="arrow" aria-hidden="true">→</span> </p> </div> <div class="thumb"> <div class="study-cover" data-size="sm" style="--from:#c0485f;--to:#7e1f32" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Public marketing site + design system for a SaaS launch, 4 languages</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2022</p> </div>  </div> </a> </li><li class="work-item"> <a href="/portfolio_2026/work/colorpro/"> <div class="body"> <h3 class="reveal title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">ColorPro:</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">turning</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">a</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">product</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">catalogue</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">into</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">a</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">creator</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">community</span></span></h3>  <p style="--line-delay:300ms" class="line-reveal outcome"><span class="lr-inner">A professional-monitor brand&#39;s site sold specs to people who buy on identity. I led the UX of a community-first rebuild (regional partner surveys, flows, wireframes, a tiered sign-up system), and after relaunch, page views rose over 400% and the community grew past 17,000 members in its first year.</span></p> <p class="row-receipt"> <span class="rr-value">+400%</span> <span class="rr-label">Page views after relaunch</span> <span class="chip chip--measured">measured</span> </p> <p class="row-meta"> UX Designer · Technical Project Management · A display-hardware manufacturer · 2022  </p> <p class="row-cta"> Read the case study<span class="arrow" aria-hidden="true">→</span> </p> </div> <div class="thumb"> <div class="study-cover" data-size="md" style="--from:#c9327f;--to:#8f34b0" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Global sub-brand site relaunch, incl. localisation</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2022</p> </div>  </div> </a> </li><li class="work-item"> <a href="/portfolio_2026/work/adapted-energy/"> <div class="body"> <h3 class="reveal title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">Adapted</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">Energy:</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">making</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">remote</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">delivery</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">credible</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">to</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">an</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">expert</span></span> <span class="reveal-w" style="--wi:9"><span class="reveal-i">audience</span></span></h3>  <p style="--line-delay:300ms" class="line-reveal outcome"><span class="lr-inner">An offshore-energy consultancy was selling something its expert buyers instinctively reject: that critical offshore scope can be delivered remotely. Working through an agency, I designed the site that had to make that credible (one navigation serving sceptical clients and the specialists being recruited) and shipped the design system and screens.</span></p>  <p class="row-meta"> UX/UI Designer · Adapted Energy (client work, via an agency) · 2022  </p> <p class="row-cta"> Read the case study<span class="arrow" aria-hidden="true">→</span> </p> </div> <div class="thumb"> <div class="study-cover" data-size="sm" style="--from:#2f7d63;--to:#245140" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Marketing site + candidate portal + third-party job-board integration</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2022</p> </div>  </div> </a> </li> </ol>  <div class="work-showcase" aria-hidden="true"> <div class="work-showcase-cover"> <div class="study-cover" data-size="lg" style="--from:#b0459a;--to:#6e2460" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Internal platform, 1,000+ employees</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2026</p> </div>  </div><div class="work-showcase-cover"> <div class="study-cover" data-size="md" style="--from:#e0603a;--to:#c9327f" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Internal mobile AR tool for global sales teams</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2023</p> </div>  </div><div class="work-showcase-cover"> <div class="study-cover" data-size="sm" style="--from:#c0485f;--to:#7e1f32" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Public marketing site + design system for a SaaS launch, 4 languages</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2022</p> </div>  </div><div class="work-showcase-cover"> <div class="study-cover" data-size="md" style="--from:#c9327f;--to:#8f34b0" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Global sub-brand site relaunch, incl. localisation</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2022</p> </div>  </div><div class="work-showcase-cover"> <div class="study-cover" data-size="sm" style="--from:#2f7d63;--to:#245140" aria-hidden="true" data-astro-cid-c7ejcnps> <div class="sc-scrim" data-astro-cid-c7ejcnps></div> <p class="sc-title" data-astro-cid-c7ejcnps>Marketing site + candidate portal + third-party job-board integration</p> <p class="sc-foot" data-astro-cid-c7ejcnps>2022</p> </div>  </div> </div> </div> </div> </section> <div class="hero-field hero-field--lower"> <div class="hero-mesh" aria-hidden="true"> <span class="hero-blob b-drift-1"></span> <span class="hero-blob b-drift-2"></span> <span class="hero-blob b-drift-3"></span> </div> <div class="hero-grain" aria-hidden="true"></div> <section id="about" class="home-about" aria-labelledby="about-heading"> <div class="wrap"> <div class="index-head"> <h2 id="about-heading" class="reveal"><span class="reveal-w" style="--wi:0"><span class="reveal-i">About</span></span></h2> <p class="label">The short version</p> </div> <div class="about-grid"> <div class="about-prose flow"> <p>
+I'm Sam Perniskie, a senior product designer based in Taipei. For six-plus years I've
+            owned product and web experiences end to end, currently as the global UX/UI team lead
+            at a display-technology manufacturer, where I founded and lead the global design
+            system.
+</p> <p>
+There's a process to these things, and I like owning it end to end: making the early
+            case for why something should exist, winning the buy-in to get it off the ground, then
+            seeing it through discovery, design, and the handoff into engineering. That arc is
+            where design systems and accessibility live, and where I've done my most useful work.
+</p> <p>
+I use AI tools daily (prototyping, research synthesis, data analysis) and the judgment
+            stays human. Accessibility is baked in, not bolted on: this site holds itself to
+            WCAG 2.2 AA and says so <a href="/portfolio_2026/accessibility/">out loud</a>.
+</p> <p class="about-more"> <a href="/portfolio_2026/about/">More about me <span class="arrow">→</span></a> </p> </div> <dl class="about-facts" aria-label="At a glance"> <div><dt>Role</dt><dd>Global UX/UI team lead</dd></div> <div><dt>Base</dt><dd>Taipei, Taiwan</dd></div> <div><dt>Focus</dt><dd>Design systems · accessibility · effective UX/UI · AI integration</dd></div> <div><dt>Also</dt><dd>Kulchur Collective, a small design consultancy</dd></div> </dl> </div> </div> </section> <section id="expertise" class="home-xp" aria-labelledby="xp-heading"> <div class="wrap"> <div class="index-head"> <h2 id="xp-heading" class="reveal"><span class="reveal-w" style="--wi:0"><span class="reveal-i">Expertise</span></span></h2> <p class="label">What I own</p> </div> <ul class="xp-grid" role="list"> <li class="xp-card"> <h3>End-to-end design</h3>  <ul class="xp-chips" role="list"> <li>Double diamond process</li> <li>Human-centred design</li> <li>UX research</li> <li>Information architecture</li> <li>Wireframing</li> <li>High-fidelity design</li> <li>UI design</li> <li>Design systems</li> </ul> </li> <li class="xp-card"> <h3>Accessibility</h3> <ul class="xp-chips" role="list"> <li>WCAG 2.2 AA as the floor</li> <li>European Accessibility Act remediation</li> <li>Audit scores: high 70s to 98</li> <li>Keyboard &amp; reduced-motion design</li> <li>Honest accessibility statements</li> </ul> </li> <li class="xp-card"> <h3>Design-to-engineering handoff</h3> <ul class="xp-chips" role="list"> <li>Interactive prototypes</li> <li>Dev-ready component documentation</li> <li>Built alongside development teams</li> <li>UX into builds that didn't plan for it</li> </ul> </li> <li class="xp-card"> <h3>Research that ships</h3> <ul class="xp-chips" role="list"> <li>Moderated usability testing</li> <li>Stakeholder discovery</li> <li>Regional partner surveys</li> <li>AI-assisted synthesis, human judgment</li> <li>Evidence-labelled results</li> </ul> </li> </ul> </div> </section> </div><section id="contact" class="home-contact" aria-labelledby="contact-heading"> <div class="contact-orbs" aria-hidden="true"> <span class="contact-orb orb-a"></span> <span class="contact-orb orb-b"></span> </div> <div class="wrap"> <div class="index-head"> <h2 id="contact-heading" class="reveal"><span class="reveal-w" style="--wi:0"><span class="reveal-i">Get</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">in</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">touch</span></span></h2> <p class="label">Fastest by email</p> </div> <div class="contact-grid"> <p style="--line-delay:300ms" class="line-reveal contact-lede"><span class="lr-inner">Whether it&#39;s a role, a project, or a question about a decision in one of these studies, email is the fastest way to reach me.</span></p> <ul class="contact-links" role="list"> <li> <span class="label">Email</span> <a href="mailto:sperniskie@gmail.com">sperniskie@gmail.com</a> </li> <li> <span class="label">LinkedIn</span> <a href="https://www.linkedin.com/in/sam-perniskie">/in/sam-perniskie</a> </li> <li> <span class="label">Behance</span> <a href="https://www.behance.net/SamPerniskie">/SamPerniskie</a> </li> <li> <span class="label">CV</span> <a href="/portfolio_2026/cv/">Download the PDF</a> </li> </ul> </div> </div> </section>  </main> <footer class="site-footer"> <div class="footer-smoke" aria-hidden="true"> <canvas class="footer-motes"></canvas> </div> <div class="wrap"> <p class="label footer-kicker">Contact</p> <p class="footer-cta">
+Got something to take end to end?<br> <a href="mailto:sperniskie@gmail.com">sperniskie@gmail.com</a> </p> <div class="footer-cols"> <nav aria-label="Footer"> <ul> <li><a href="/portfolio_2026/#work">Work</a></li> <li><a href="/portfolio_2026/about/">About</a></li> <li><a href="/portfolio_2026/cv/">CV</a></li> <li><a href="https://www.linkedin.com/in/sam-perniskie">LinkedIn</a></li> <li><a href="https://www.behance.net/SamPerniskie">Behance</a></li> <li><a href="/portfolio_2026/accessibility/">Accessibility statement</a></li> </ul> </nav> <p class="colophon"> Sam Perniskie · Taipei, Taiwan. Set in Fraunces, Source Serif 4 &amp; IBM Plex Mono.
+            Hand-built in Astro: no tracking, every figure evidence-tagged, no frameworks,
+            no bundled JavaScript, only hand-written inline scripts.
+<a href="/portfolio_2026/side-quest/" aria-label="Insert coin: play Metal Slide, a short arcade game about my team's work">Insert coin.</a> </p> </div> </div> </footer> <aside class="ms-invite" id="ms-invite" aria-label="Easter egg" style="--sam: url(/portfolio_2026/media/metal-slide/sam-invite.png)" hidden> <div class="ms-invite-bubble"> <p class="ms-invite-ask">Are you ready for an adventure?</p> <div class="ms-invite-actions"> <a class="btn btn--fill" href="/portfolio_2026/side-quest/">Let's go!</a> <button type="button" class="btn btn--ghost" data-invite-close>Not now</button> </div> </div> <span class="ms-invite-sam" aria-hidden="true"></span> </aside> <script>
+      (function () {
+        var el = document.getElementById('ms-invite');
+        if (!el || !window.requestAnimationFrame) return;
+        var KEY = 'metalSlide.invite';
+        function get(store) { try { return window[store].getItem(KEY); } catch (e) { return null; } }
+        function put(store, v) { try { window[store].setItem(KEY, v); } catch (e) { /* not remembered */ } }
+        // Once per visit (this tab's session). A "played" flag from the old
+        // never-again rule may still sit in localStorage: it is ignored now.
+        if (get('sessionStorage')) return;
+        var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Only scrolling the visitor does counts: a scroll position the browser
+        // restores on load comes before any wheel, touch, key or click.
+        var acted = false, timer = 0;
+        function act() { acted = true; }
+        ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (t) {
+          addEventListener(t, act, { passive: true, capture: true });
+        });
+
+        // About 80ms after the visitor starts scrolling, and never over an open dialog.
+        function onScroll() {
+          if (!acted || timer) return;
+          timer = setTimeout(function () {
+            timer = 0;
+            if (!document.querySelector('dialog[open]')) show();
+          }, 80);
+        }
+        function show() {
+          removeEventListener('scroll', onScroll);
+          put('sessionStorage', 'shown');
+          el.hidden = false;
+          requestAnimationFrame(function () { el.classList.add('is-in'); });
+        }
+        function hide() {
+          if (el.hidden || el.classList.contains('is-out')) return;
+          el.classList.remove('is-in');
+          el.classList.add('is-out');
+          setTimeout(function () { el.hidden = true; }, still ? 0 : 320);
+        }
+        el.querySelector('[data-invite-close]').addEventListener('click', hide);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && !el.hidden && !document.querySelector('dialog[open]')) hide();
+        });
+        document.addEventListener('focusin', function (e) {
+          if (el.hidden || el.contains(e.target) || !e.target.getBoundingClientRect) return;
+          var a = el.getBoundingClientRect(), b = e.target.getBoundingClientRect();
+          if (b.right > a.left && b.left < a.right && b.bottom > a.top && b.top < a.bottom) hide();
+        });
+        addEventListener('scroll', onScroll, { passive: true });
+      })();
+    </script>  </body> </html>  <script>
+  (function () {
+    if (!('IntersectionObserver' in window)) return;
+    function init() {
+      var panel = document.querySelector('.work-showcase');
+      if (!panel) return;
+      var rows = [].slice.call(document.querySelectorAll('.work-index > .work-item'));
+      var covers = [].slice.call(panel.querySelectorAll('.work-showcase-cover'));
+      if (!rows.length || rows.length !== covers.length) return;
+      function show(i) {
+        for (var k = 0; k < covers.length; k++) covers[k].classList.toggle('is-active', k === i);
+      }
+      // Take over from the CSS default only once we can actually drive it.
+      panel.classList.add('is-live');
+      show(0);
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            var i = rows.indexOf(e.target);
+            if (i >= 0) show(i);
+          });
+        },
+        { rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+      );
+      rows.forEach(function (r) { io.observe(r); });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>  <script>
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var fields = document.querySelectorAll('.hero-field');
+    if (!fields.length) return;
+    var els = document.querySelectorAll('.hero-blob');
+    var blobs = [];
+    for (var bi = 0; bi < els.length; bi++) {
+      blobs.push({
+        el: els[bi],
+        ax: 46 + (bi % 5) * 12, ay: 40 + (bi % 4) * 14, // wander amplitude (px)
+        f1x: 0.00021 + bi * 0.000017, f1y: 0.00018 + bi * 0.0000205,
+        f2x: 0.00009 + bi * 0.0000091, f2y: 0.00011 + bi * 0.0000073,
+        p1x: bi * 2.4, p1y: bi * 3.1, p2x: bi * 1.3, p2y: bi * 5.2, // phase accumulators
+      });
+    }
+
+    var last = 0, raf = null, running = false;
+
+    function frame(now) {
+      var dt = last ? Math.min(50, now - last) : 16; last = now;
+      for (var i = 0; i < blobs.length; i++) {
+        var bl = blobs[i];
+        // Phase is integrated rather than sampled from absolute time, so the
+        // wander stays continuous across the pauses below instead of jumping
+        // to wherever the clock got to while the loop was stopped.
+        bl.p1x += dt * bl.f1x; bl.p1y += dt * bl.f1y;
+        bl.p2x += dt * bl.f2x; bl.p2y += dt * bl.f2y;
+        var ux = Math.sin(bl.p1x) * bl.ax + Math.sin(bl.p2x) * bl.ax * 0.5;
+        var uy = Math.cos(bl.p1y) * bl.ay + Math.cos(bl.p2y) * bl.ay * 0.5;
+        bl.el.style.setProperty('--bx', ux.toFixed(2) + 'px');
+        bl.el.style.setProperty('--by', uy.toFixed(2) + 'px');
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    function start() { if (!running) { running = true; last = 0; raf = requestAnimationFrame(frame); } }
+    function stop() { running = false; if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+    // The wander is ambient (always animating), so pause it when both fields
+    // are off-screen to spare the CPU/GPU.
+    if ('IntersectionObserver' in window) {
+      // Track each field's OWN visibility and then ask if any is on screen.
+      // A running +1/-1 counter looks equivalent and is not: the very first
+      // callback reports every observed element at once, so the visible hero
+      // (+1) and the off-screen lower field (-1) cancelled to zero and the
+      // drift was stopped before it ever ran. That went unnoticed only because
+      // the old pointermove handler also called start() — removing the pointer
+      // coupling is what exposed it.
+      var vis = [];
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          for (var i = 0; i < fields.length; i++) if (fields[i] === e.target) vis[i] = e.isIntersecting;
+        });
+        var any = false;
+        for (var j = 0; j < vis.length; j++) if (vis[j]) any = true;
+        any ? start() : stop();
+      }, { threshold: 0 });
+      for (var fi = 0; fi < fields.length; fi++) io.observe(fields[fi]);
+    } else { start(); }
+  })();
+</script>  <script>
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var HUES = {
+      'b-amber':[255,154,92],  'b-coral':[255,107,122], 'b-rose':[255,95,162],
+      'b-magenta':[201,79,214],'b-violet':[176,69,154], 'b-cobalt':[192,72,95],
+      'b-indigo':[168,66,46],
+    };
+    // The same palette in left-to-right order, for an instance that has no
+    // .hero-blob elements of its own to take its colour from.
+    var RAMP = [HUES['b-amber'], HUES['b-coral'], HUES['b-rose'], HUES['b-magenta'],
+                HUES['b-violet'], HUES['b-cobalt'], HUES['b-indigo']];
+
+    // ONE SIMULATION INSTANCE. Every var below is a closure local, so a second
+    // mount gets its own grid, particles, sprite atlas and canvas with nothing
+    // shared but the palette above.
+    //   cfg.canvas   the <canvas> to draw into
+    //   cfg.box      element whose rect defines the field's coordinate space
+    //   cfg.host     element that owns pointer events and visibility
+    //   cfg.deposit  per-mote alpha (footer runs hotter than the hero)
+    //   cfg.density  budget multiplier, else the box's --mote-density
+    //   cfg.dissolve drive the scroll dissolve + write --dissolve (hero only)
+    //   cfg.meshFade resting opacity handed to the CSS mass gradient
+    //   cfg.markDrawn set data-drawn on the host at first pulse (retires a hint)
+    function mount(cfg) {
+    var cv = cfg.canvas, host = cfg.host, field = cfg.box;
+    if (!cv || !host || !field || !cv.getContext) return;
+    var ctx = cv.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    var W=0, H=0, CELL=36, COLS=0, ROWS=0;
+    var vx=null, vy=null, tx=null, ty=null;     // velocity field + scratch
+    var parts=[], masses=[], sprite=null, tint={}, strokes=[];
+    var running=false, visible=true, p=0;
+    var pxr=null, pyr=null, ppx=null, ppy=null; // pointer now / previous
+    var TRAIL_FADE=0.22, DEPOSIT=(cfg.deposit==null?0.34:cfg.deposit);
+    // Stroke shape. STROKES buckets from straight to WAVE_AMP amplitude;
+    // TURN_WAVE converts a particle's smoothed per-frame turn into a bucket.
+    // ANG_LAG is how fast a puff's long axis chases its velocity — deliberately
+    // slow, so it whips round a bend instead of snapping to the flow.
+    var STROKES=6, WAVE_AMP=1.0, TURN_WAVE=55, ANG_LAG=0.22;
+    // Pointer wake, all in grid cells (CELL px each).
+    // Footprint reduced 40% BY AREA (2026-08-07). Area goes as length x width,
+    // so each linear extent is scaled by sqrt(0.6) = 0.775 rather than by 0.6 —
+    // scaling both by 0.6 would have taken 64% of the area out, not 40%.
+    // SPREAD is deliberately unscaled: it is a ratio, so the width at a given
+    // fraction along the wake already shrinks once LEAD and the lengths do.
+    var LEAD=0.70,       // half-width at the pointer itself — the tight bow
+        SPREAD=0.42,     // how fast the wake cone opens out behind
+        WAKE_LEN=1.55,   // wake length at a crawl
+        WAKE_GAIN=0.124, // extra wake length per px/frame of pointer speed
+        PUSH=0.075,      // momentum injected along travel
+        SHED_DIST=26,    // px of pointer travel between shed eddies
+        SHED_SPIN=0.06;  // eddy strength per px/frame of pointer speed
+    // Sonar pulse -> dye. Count, ring radius and outward speed all ramp with
+    // how fast the pointer was travelling when the pulse fired, so a flick
+    // throws out a wide fast bloom and a settle leaves a small soft one.
+    var PULSE_N=24,        // motes in a resting pulse
+        PULSE_NGAIN=1.5,   // extra motes per px/frame of pointer speed
+        PULSE_NMAX=44,     // ceiling on that bonus
+        PULSE_R=12.4,      // ring radius at rest, px
+        PULSE_V=0.55,      // outward particle speed at rest
+        PULSE_VGAIN=0.07,  // extra outward speed per px/frame
+        PULSE_DEP=0.85,    // pulse motes deposit a little softer than ambient
+        PULSE_CAP=1.35;    // stop seeding past this multiple of the budget
+
+    // The soft dot every puff is built from. A hot core with a long soft halo:
+    // the core is what gives the field its nebula reading — filaments that GLOW
+    // along their spine rather than flat vapour.
+    function dotSprite(){
+      var r=32,c=document.createElement('canvas'); c.width=c.height=r*2;
+      var g=c.getContext('2d'), gr=g.createRadialGradient(r,r,0,r,r,r);
+      gr.addColorStop(0,'rgba(255,255,255,1)');
+      gr.addColorStop(0.22,'rgba(255,255,255,0.62)');
+      gr.addColorStop(0.55,'rgba(255,255,255,0.22)');
+      gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle=gr; g.fillRect(0,0,r*2,r*2); return c;
+    }
+
+    // ONE STROKE. Soft dots stamped along a SINE wave whose axis is horizontal,
+    // so drawing only ever has to rotate it to the direction of travel. `amp`
+    // scales the undulation; 0 gives a straight puff.
+    //
+    // A sine period, not a circular arc: an arc curls one way only, so every
+    // puff read as a comma all bending the same way. A full period crosses its
+    // axis twice, which is the S that shearing smoke actually makes. Mirroring
+    // the cross axis at draw time turns each S into a Z, so one atlas still
+    // covers both handednesses.
+    function buildWave(dot,amp){
+      var S=96, c=document.createElement('canvas'); c.width=c.height=S;
+      var g=c.getContext('2d'); g.globalCompositeOperation='lighter';
+      var N=13, half=S*0.30, ds=S*0.34;
+      for(var i=0;i<N;i++){
+        var u=(i/(N-1))*2-1;
+        var px=S/2+u*half;
+        var py=S/2+Math.sin(u*Math.PI)*amp*S*0.16;
+        g.globalAlpha=0.24;
+        g.drawImage(dot, px-ds/2, py-ds/2, ds, ds);
+      }
+      return c;
+    }
+
+    // STROKE ATLAS. A 2D affine transform can rotate, scale and shear, but it
+    // cannot BEND — a sheared ellipse is still an ellipse — so stamping one
+    // round sprite along the velocity could only ever produce a rigid capsule.
+    // That rigidity is what read as stiff. So the shape is baked into the
+    // sprite instead: S-waves of increasing amplitude, picked per particle from
+    // the turn it is actually undergoing. Cost is unchanged at one drawImage
+    // per particle, and the SIGN of the turn is handled by mirroring the
+    // transform rather than by doubling the atlas.
+    function buildSprite(){
+      var dot=dotSprite();
+      for(var k=0;k<STROKES;k++) strokes.push(buildWave(dot, k/(STROKES-1)*WAVE_AMP));
+      sprite=strokes[0];
+    }
+
+    // Memo is keyed by (hue, curvature bucket) now, not hue alone.
+    function tinted(rgb,k){
+      var key=rgb[0]+','+rgb[1]+','+rgb[2]+'|'+k;
+      if(tint[key]) return tint[key];
+      var src=strokes[k], n=document.createElement('canvas');
+      n.width=n.height=src.width;
+      var g=n.getContext('2d'); g.drawImage(src,0,0);
+      g.globalCompositeOperation='source-in';
+      g.fillStyle='rgb('+rgb[0]+','+rgb[1]+','+rgb[2]+')';
+      g.fillRect(0,0,n.width,n.height); tint[key]=n; return n;
+    }
+
+    // Colour at a point = nearest mass, so dye born anywhere carries the
+    // palette that was already there.
+    function hueAt(x,y){
+      var best=null, bd=1e9;
+      for(var i=0;i<masses.length;i++){
+        var m=masses[i], dx=x-m.lx, dy=y-m.ly, d=dx*dx+dy*dy;
+        if(d<bd){bd=d; best=m;}
+      }
+      return best? best.rgb : [140,120,220];
+    }
+
+    function idx(c,r){ return r*COLS+c; }
+
+    function seedGrid(){
+      COLS=Math.max(8,Math.ceil(W/CELL)); ROWS=Math.max(8,Math.ceil(H/CELL));
+      var n=COLS*ROWS;
+      vx=new Float32Array(n); vy=new Float32Array(n);
+      tx=new Float32Array(n); ty=new Float32Array(n);
+    }
+
+    function spawn(n, atX, atY, spread, vxi, vyi, dep){
+      for(var i=0;i<n;i++){
+        var a=Math.random()*Math.PI*2, d=Math.sqrt(Math.random())*spread;
+        var x=atX+Math.cos(a)*d, y=atY+Math.sin(a)*d;
+        parts.push({
+          x:x, y:y, vx:vxi||0, vy:vyi||0,
+          rgb:hueAt(x,y),
+          life:0, max:8 + Math.random()*11,
+          dep:(dep==null?1:dep),
+          size:26 + Math.random()*62,
+          // ang = the puff's long axis, which LAGS the velocity; turn = its
+          // smoothed signed turn rate, which chooses the arc it is drawn with.
+          ang:Math.random()*Math.PI*2, turn:0,
+        });
+      }
+    }
+
+    function measure(){
+      var fr=field.getBoundingClientRect();
+      W=fr.width; H=fr.height; cv.width=Math.round(W); cv.height=Math.round(H);
+      var els=field.querySelectorAll('.hero-mesh .hero-blob');
+      masses=[];
+      if(!els.length){
+        // No mass gradient in this section, so synthesise one: the same seven
+        // hues laid warm-left to cool-right across the box. hueAt() then works
+        // unchanged and a mote still takes the colour of wherever it was born.
+        for(var mi=0;mi<RAMP.length;mi++){
+          masses.push({ el:null, rgb:RAMP[mi],
+            cx:(mi+0.5)/RAMP.length*W, cy:H*0.5,
+            rad:Math.max(W/RAMP.length,H)*0.9, lx:0, ly:0, depth:0 });
+        }
+      }
+      els.forEach(function(el){
+        var cls=el.className.split(' ').filter(function(c){return HUES[c];})[0];
+        var b=el.getBoundingClientRect();
+        var bx=parseFloat(el.style.getPropertyValue('--bx'))||0;
+        var by=parseFloat(el.style.getPropertyValue('--by'))||0;
+        masses.push({ el:el, rgb:HUES[cls]||[255,255,255],
+          cx:b.left-fr.left+b.width/2-bx, cy:b.top-fr.top+b.height/2-by,
+          rad:b.width/2, lx:0, ly:0,
+          depth:parseFloat(getComputedStyle(el).getPropertyValue('--d'))||200 });
+      });
+      updateMasses();
+      seedGrid();
+      // NO PRE-FILL. The hero opens with an empty canvas: every mote on screen
+      // was put there by a pointer or a finger, and nothing seeds itself. The
+      // CSS mass gradient underneath is the resting state, which is why
+      // --mesh-fade is no longer forced to 1 at startup — without that the hero
+      // would open completely blank rather than opening as the gradient.
+      parts=[];
+    }
+
+    function updateMasses(){
+      for(var i=0;i<masses.length;i++){
+        var m=masses[i];
+        m.lx=m.cx+(m.el?(parseFloat(m.el.style.getPropertyValue('--bx'))||0):0);
+        m.ly=m.cy+(m.el?(parseFloat(m.el.style.getPropertyValue('--by'))||0):0);
+      }
+    }
+
+    // Bilinear sample of the velocity field.
+    function sample(x,y,arr){
+      var gx=x/CELL-0.5, gy=y/CELL-0.5;
+      var c0=Math.floor(gx), r0=Math.floor(gy);
+      var fx=gx-c0, fy=gy-r0;
+      var c1=c0+1, r1=r0+1;
+      c0=c0<0?0:c0>COLS-1?COLS-1:c0; c1=c1<0?0:c1>COLS-1?COLS-1:c1;
+      r0=r0<0?0:r0>ROWS-1?ROWS-1:r0; r1=r1<0?0:r1>ROWS-1?ROWS-1:r1;
+      var a=arr[idx(c0,r0)], b=arr[idx(c1,r0)], c=arr[idx(c0,r1)], d=arr[idx(c1,r1)];
+      return (a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+d*fx)*fy;
+    }
+
+    // Ambient flow: slowly evolving swirls so the field is never still.
+    //
+    // This is the CURL of a stream function psi, not a pair of hand-picked
+    // sines. That distinction is the whole ball game. A field written directly
+    // as (sin, cos) has non-zero divergence, and this sim has no pressure
+    // projection to remove it — so its sinks act as drains. Measured: 907 of
+    // 950 particles collapsed into a single 120px cell within seconds, which
+    // is why the hero read as empty however hard the deposit was pushed.
+    //   v = curl(psi) = (dpsi/dy, -dpsi/dx)
+    // is divergence-free by construction, so the flow can swirl and shear but
+    // can never vacuum the field into a point.
+    var A1=1.0, a1=1.0, b1=1.25,   // broad, lazy swirls
+        A2=0.62, a2=2.4, b2=2.1,   // a finer octave for wispiness
+        A3=0.28, a3=4.6, b3=4.1,   // finer still: the turbulent detail
+        FLOW=0.038,                // target speed of the ambient flow
+        RISE=0.005,                // smoke's own gentle buoyancy
+        RELAX=0.022;               // how fast the field returns to ambient
+    function ambient(t){
+      var L=300/CELL;              // swirl scale in cells (~300px)
+      for(var r=0;r<ROWS;r++){
+        for(var c=0;c<COLS;c++){
+          var i=idx(c,r), u=c/L, v=r/L;
+          var s1x=Math.sin(a1*u+t*0.21), c1x=Math.cos(a1*u+t*0.21);
+          var s1y=Math.sin(b1*v-t*0.17), c1y=Math.cos(b1*v-t*0.17);
+          var s2x=Math.sin(a2*u-t*0.13), c2x=Math.cos(a2*u-t*0.13);
+          var s2y=Math.sin(b2*v+t*0.23), c2y=Math.cos(b2*v+t*0.23);
+          var s3x=Math.sin(a3*u+t*0.31), c3x=Math.cos(a3*u+t*0.31);
+          var s3y=Math.sin(b3*v-t*0.27), c3y=Math.cos(b3*v-t*0.27);
+          // Still the curl of a stream function, just of a three-octave one:
+          // curl is linear, so the sum of three divergence-free fields is
+          // divergence-free too. Adding turbulence by perturbing the vectors
+          // directly would put the sinks back and collapse the field again.
+          var cx =  A1*b1*s1x*c1y + A2*b2*s2x*c2y + A3*b3*s3x*c3y;
+          var cy = -A1*a1*c1x*s1y - A2*a2*c2x*s2y - A3*a3*c3x*s3y;
+          // Relax TOWARDS the ambient flow rather than accumulating into it:
+          // a pointer draft then decays back into the drift on its own, and no
+          // constant term can compound frame over frame into a runaway.
+          vx[i]+=(cx*FLOW - vx[i])*RELAX;
+          vy[i]+=(cy*FLOW - RISE - vy[i])*RELAX;
+        }
+      }
+    }
+
+    // Diffuse (neighbour blur) + decay. This is what makes a pointer draft
+    // spread outward and die away instead of staying a hard streak.
+    function diffuse(){
+      for(var r=0;r<ROWS;r++){
+        for(var c=0;c<COLS;c++){
+          var i=idx(c,r);
+          var l=idx(c>0?c-1:c,r), rr=idx(c<COLS-1?c+1:c,r);
+          var u=idx(c,r>0?r-1:r), d=idx(c,r<ROWS-1?r+1:r);
+          tx[i]=(vx[i]*2.2+vx[l]+vx[rr]+vx[u]+vx[d])/6.2*0.99;
+          ty[i]=(vy[i]*2.2+vy[l]+vy[rr]+vy[u]+vy[d])/6.2*0.99;
+        }
+      }
+      var tmp=vx; vx=tx; tx=tmp; tmp=vy; vy=ty; ty=tmp;
+    }
+
+    // A rotational impulse. Pure rotation is divergence-free, so shedding these
+    // adds spin without creating the sinks that once vacuumed the whole field
+    // into a single cell.
+    function vortex(x,y,spin){
+      var R=1.86, cc=x/CELL, rr=y/CELL;
+      var c0=Math.round(cc), r0=Math.round(rr), reach=Math.ceil(R)+1;
+      for(var r=r0-reach;r<=r0+reach;r++){
+        if(r<0||r>=ROWS) continue;
+        for(var c=c0-reach;c<=c0+reach;c++){
+          if(c<0||c>=COLS) continue;
+          var ax=c-cc, ay=r-rr, d=Math.sqrt(ax*ax+ay*ay);
+          if(d>R||d<1e-4) continue;
+          var w=(1-d/R)*(1-d/R), i=idx(c,r);
+          vx[i]+= -ay/d*spin*w;
+          vy[i]+=  ax/d*spin*w;
+        }
+      }
+    }
+
+    // THE WAKE. This used to be a fixed ~108px circle centred on the pointer,
+    // which ploughed a uniform swathe with no sense of direction — the same
+    // shape whether you crept or flicked. A body moving through fluid instead
+    // has a TIGHT leading edge (the fluid only parts just ahead of it) and a
+    // broad wake behind that lengthens with speed, and it sheds counter-
+    // rotating eddies into that wake. Both are cheap on a velocity grid: the
+    // kernel is measured in the pointer's own frame, along-travel and
+    // cross-travel, so it can be asymmetric front-to-back.
+    var shedAcc=0, shedSide=1;
+    function splat(x,y,dx,dy){
+      var mag=Math.hypot(dx,dy);
+      if(mag<0.4) return;
+      var sc=mag>40?40:mag, ux=dx/mag, uy=dy/mag;
+      var L=WAKE_LEN+sc*WAKE_GAIN;              // wake length, in cells
+      var cc=x/CELL, rr=y/CELL;
+      var reach=Math.ceil(Math.max(L, LEAD+L*SPREAD))+1;
+      var c0=Math.round(cc), r0=Math.round(rr);
+      for(var r=r0-reach;r<=r0+reach;r++){
+        if(r<0||r>=ROWS) continue;
+        for(var c=c0-reach;c<=c0+reach;c++){
+          if(c<0||c>=COLS) continue;
+          var ax=c-cc, ay=r-rr;
+          var s=-(ax*ux+ay*uy);                 // >0 behind the pointer
+          var n=ax*(-uy)+ay*ux;                 // cross-track
+          var halfW, along;
+          if(s>=0){                             // the wake: opens out behind
+            halfW=LEAD+s*SPREAD; along=1-s/L;
+          } else {                              // the bow: closes in fast
+            halfW=LEAD*(1+s*0.9); along=1+s/(LEAD*1.6);
+          }
+          if(halfW<=0||along<=0) continue;
+          var tt=Math.abs(n)/halfW; if(tt>=1) continue;
+          var w=(1-tt)*(1-tt)*along, i=idx(c,r);
+          vx[i]+=dx*PUSH*w; vy[i]+=dy*PUSH*w;
+        }
+      }
+      // Eddies, shed alternately off each shoulder as the pointer travels —
+      // the thing that makes a wake read as a wake rather than a smear. Paced
+      // by DISTANCE, not by frames, so the pattern is the same whether the
+      // pointer crosses the hero in ten frames or a hundred.
+      shedAcc+=mag;
+      if(shedAcc>=SHED_DIST){
+        shedAcc=0; shedSide=-shedSide;
+        var bx=x-ux*CELL*1.6+uy*CELL*0.8*shedSide;
+        var by=y-uy*CELL*1.6-ux*CELL*0.8*shedSide;
+        var spin=sc*SHED_SPIN; if(spin>2.2) spin=2.2;
+        vortex(bx,by,spin*shedSide);
+      }
+    }
+
+    var t0=performance.now(), lastT=t0, lastY=window.scrollY, energy=0;
+    function frame(now){
+      var dt=Math.min(48, now-lastT)/16.67; lastT=now;
+      var t=(now-t0)/1000;
+      if(cfg.dissolve){
+        var hb=host.getBoundingClientRect();
+        p=Math.min(1,Math.max(0,-hb.top/Math.max(1,hb.height*0.85)));
+        field.style.setProperty('--dissolve',p.toFixed(4));
+      }
+
+      var vel=Math.abs(window.scrollY-lastY); lastY=window.scrollY;
+      energy=energy*0.9+vel*0.02;
+
+      updateMasses();
+
+      ambient(t);
+      if(pxr!==null && ppx!==null) splat(pxr,pyr,pxr-ppx,pyr-ppy);
+      ppx=pxr; ppy=pyr;
+      diffuse();
+
+      // Fade the previous frame: trails are what make this read as smoke.
+      ctx.globalCompositeOperation='destination-out';
+      ctx.fillStyle='rgba(0,0,0,'+TRAIL_FADE+')';
+      ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation='lighter';
+
+      var lift=(1+energy*0.05)+p*7;   // scroll blows the field upward
+      for(var i=parts.length-1;i>=0;i--){
+        var q=parts[i];
+        // 0.89, not 0.86: a mote holds the momentum the pointer gave it for
+        // longer before the field takes over, so a trail keeps travelling after
+        // the gesture that made it has ended.
+        q.vx=q.vx*0.89+sample(q.x,q.y,vx)*0.5;
+        q.vy=q.vy*0.89+sample(q.x,q.y,vy)*0.5;
+        q.x+=q.vx*dt*2.1; q.y+=(q.vy-lift*0.10)*dt*2.1;
+        q.life+=dt/60;
+
+        // The puff's long axis chases its velocity but never catches it, and
+        // the size of that shortfall IS the turn the particle is undergoing —
+        // which is exactly what picks the arc it gets drawn with. One quantity,
+        // two jobs: no separate curvature term to keep in sync with the motion.
+        var sp=Math.hypot(q.vx,q.vy);
+        if(sp>1e-4){
+          var da=Math.atan2(q.vy,q.vx)-q.ang;
+          while(da>Math.PI) da-=Math.PI*2;
+          while(da<-Math.PI) da+=Math.PI*2;
+          q.ang+=da*ANG_LAG*dt;
+          q.turn=q.turn*0.90+da*0.10;
+        }
+
+        var age=q.life/q.max;
+        if(age>=1 || q.x<-160||q.x>W+160||q.y<-200||q.y>H+260){
+          parts.splice(i,1); continue;
+        }
+        // Fade in and out so nothing pops into or out of existence.
+        var a=Math.sin(Math.min(1,age)*Math.PI);
+        var alpha=DEPOSIT*q.dep*a*(1-p*0.75);
+        if(alpha<=0.002) continue;
+        var s=q.size*(0.7+age*0.9);
+        ctx.globalAlpha=alpha>1?1:alpha;
+        // The arc sprite already carries the wisp shape, so the transform only
+        // has to orient it and add a little extra stretch with speed — the old
+        // pass did all the elongation here, and doing both would double it.
+        // Mirroring the cross axis flips the arc's bend, so one atlas covers
+        // turns in both directions.
+        var st=1+(sp*4.5>1.6?1.6:sp*4.5);
+        var sy=1/Math.pow(st,0.4);
+        var mir=q.turn<0?-1:1;
+        var kk=Math.round(Math.abs(q.turn)*TURN_WAVE);
+        if(kk>STROKES-1) kk=STROKES-1;
+        var ca=Math.cos(q.ang), sa=Math.sin(q.ang);
+        ctx.setTransform(ca*st, sa*st, -sa*sy*mir, ca*sy*mir, q.x, q.y);
+        ctx.drawImage(tinted(q.rgb,kk), -s/2, -s/2, s, s);
+      }
+      // Identity again: the next frame's trail fade is a full-canvas fillRect.
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+
+      // NO AMBIENT REPLENISH. Nothing tops the field up: motes exist only where
+      // a pointer or a finger made them, and when the last one dies the canvas
+      // is empty again until you move. The old floor is gone entirely rather
+      // than turned down, because any floor at all makes the trail look like
+      // weather instead of something you drew.
+
+      // Idle with an empty canvas: stop the loop rather than clearing nothing
+      // sixty times a second. Any pulse calls wake() and starts it again.
+      if(!visible || (!parts.length && p<0.01)){ running=false; return; }
+      requestAnimationFrame(frame);
+    }
+
+    function wake(){ if(running||!visible) return; running=true; lastT=performance.now(); requestAnimationFrame(frame); }
+
+    // THE SONAR PULSE IS WHAT BIRTHS THE DYE. The ring you see expanding from
+    // the cursor and the motes it leaves behind are now one event rather than
+    // two effects that merely happen in the same place, so the smoke reads as
+    // caused by the pointer instead of just disturbed by it.
+    //
+    // The outward kick goes to the PARTICLES, never to the velocity grid. A
+    // radial impulse on the grid is divergence by definition — a source — and
+    // this sim has no pressure projection to absorb it, so it would burn a
+    // permanent hole in the field exactly the way the old sinks burned a
+    // permanent clump. Particle velocity carries no such risk.
+    function pulse(x,y,speed){
+      if(p>0.6) return;                        // scrolling away: nothing to seed
+      if(parts.length>PULSE_CAP*budgetFor()) return;
+      var n=Math.round(PULSE_N+Math.min(PULSE_NMAX, speed*PULSE_NGAIN));
+      var r0=PULSE_R+Math.min(54, speed*0.85);
+      var out=PULSE_V+speed*PULSE_VGAIN;
+      for(var i=0;i<n;i++){
+        var a=(i/n)*Math.PI*2+Math.random()*0.6;
+        var rr=r0*(0.7+Math.random()*0.6);
+        spawn(1, x+Math.cos(a)*rr, y+Math.sin(a)*rr, 8,
+              Math.cos(a)*out, Math.sin(a)*out, PULSE_DEP);
+      }
+    }
+    function budgetFor(){
+      var d=cfg.density||parseFloat(getComputedStyle(field).getPropertyValue('--mote-density'))||1;
+      return Math.round(Math.min(2600,Math.max(300,(W*H)/1500*d)));
+    }
+
+    // Fired by the cursor script in Base.astro, which owns the visible ring.
+    // Absent on touch and under reduced motion, where that script never arms —
+    // the ambient floor above is what keeps the hero alive in those cases.
+    addEventListener('sonar', function(e){
+      if(!e.detail||!W) return;
+      var fr=field.getBoundingClientRect();
+      var x=e.detail.x-fr.left, y=e.detail.y-fr.top;
+      if(x<-120||y<-120||x>W+120||y>H+120) return;
+      pulse(x,y,e.detail.speed||0);
+      if(cfg.markDrawn) host.setAttribute('data-drawn','true'); // retires the hint
+      wake();
+    });
+
+    // Every pointer type, not just a fine one: a finger makes drafts and a
+    // wake exactly the way a cursor does, and on touch this is the only thing
+    // that ever puts a mote on screen.
+    host.addEventListener('pointermove',function(e){
+      var fr=field.getBoundingClientRect();
+      pxr=e.clientX-fr.left; pyr=e.clientY-fr.top;
+      // The loop parks itself when the canvas is empty, so without this the
+      // first stretch of a gesture would inject no draft at all — the field
+      // would only start responding once a pulse happened to wake it.
+      wake();
+    },{passive:true});
+    host.addEventListener('pointerleave',function(){ pxr=pyr=ppx=ppy=null; },{passive:true});
+    host.addEventListener('pointerdown',function(e){
+      var fr=field.getBoundingClientRect();
+      pxr=e.clientX-fr.left; pyr=e.clientY-fr.top; ppx=ppy=null;
+    },{passive:true});
+    addEventListener('scroll',wake,{passive:true});
+    new IntersectionObserver(function(es){ visible=es[0].isIntersecting; if(visible) wake(); },{threshold:0}).observe(host);
+    // measure() re-seeds the whole field, so it must only run on a size change
+    // that actually matters — an unguarded observer would wipe and refill the
+    // smoke on every spurious fire.
+    var rt;
+    function remeasure(){
+      clearTimeout(rt);
+      rt=setTimeout(function(){
+        var fr=field.getBoundingClientRect();
+        if(Math.abs(fr.width-W)<2 && Math.abs(fr.height-H)<2) return;
+        measure(); wake();
+      },200);
+    }
+    addEventListener('resize',remeasure);
+
+    // The field also changes height WITHOUT a resize event, and that was
+    // shipping a stale canvas: measure() ran while the fallback serif was still
+    // in place, the headline wrapped a line taller, and the bitmap was sized
+    // 1440x1153 for a box that settled at 1440x991. The browser then squashed
+    // every frame by 14% vertically, and the sim kept spawning into 162px of
+    // coordinate space that no longer existed. A ResizeObserver catches the
+    // font swap, the reveals settling, and anything else that reflows the hero.
+    if('ResizeObserver' in window) new ResizeObserver(remeasure).observe(field);
+
+    if(cfg.meshFade!=null) field.style.setProperty('--mesh-fade',cfg.meshFade);
+    buildSprite(); measure();
+    wake();
+    }
+
+    // --- the hero -----------------------------------------------------------
+    var heroEl = document.querySelector('.hero');
+    var heroField = heroEl && heroEl.closest('.hero-field');
+    if (heroEl && heroField) mount({
+      canvas: document.querySelector('.hero-motes'),
+      host: heroEl, box: heroField,
+      dissolve: true, meshFade: '0.58', markDrawn: true,
+    });
+
+    // --- the footer ---------------------------------------------------------
+    // The canvas only exists on home (Base.astro renders it behind isHome), so
+    // this whole simulation stays off every other page rather than shipping the
+    // sim site-wide for one section. Runs hotter than the hero: the footer is
+    // the deepest point of the descent and the effect is meant to be felt
+    // there, not whispered. No dissolve — nothing scrolls past it.
+    var fcv = document.querySelector('.footer-motes');
+    var fband = fcv && fcv.closest('.footer-smoke');
+    var footer = fcv && fcv.closest('.site-footer');
+    if (fcv && fband && footer) {
+      // Fit the band to the DEAD SPACE between the section above and the
+      // footer's own first line of text, measured rather than assumed. A fixed
+      // offset cannot work: that gap is 120px at 1440 and 64px at 320, so the
+      // value tuned on desktop sat straight on top of the contact copy on
+      // mobile. The band starts above the footer's top edge on purpose — the
+      // footer alone has only ~64px of clear room, and a strip that small is
+      // impossible to find, which is exactly how this was first reported.
+      var above = document.querySelector('.contact-grid') || document.querySelector('.home-contact');
+      var kicker = footer.querySelector('.footer-kicker');
+      function fitBand(){
+        if (!kicker) return;
+        var fT = footer.getBoundingClientRect().top;
+        var top = above ? Math.min(0, above.getBoundingClientRect().bottom - fT + 12) : 0;
+        var h = Math.max(40, (kicker.getBoundingClientRect().top - fT - 16) - top);
+        fband.style.insetBlockStart = Math.round(top) + 'px';
+        fband.style.blockSize = Math.round(h) + 'px';
+      }
+      fitBand();
+      addEventListener('resize', fitBand, { passive: true });
+      // Fonts and reveals settle after first layout, and the gap moves with
+      // them. The sim's own observer watches the band, so re-fitting here is
+      // what makes that fire.
+      if ('ResizeObserver' in window) new ResizeObserver(fitBand).observe(footer);
+      mount({
+        canvas: fcv, host: footer, box: fband,
+        deposit: 0.46, density: 1.5,
+      });
+    }
+  })();
+</script>

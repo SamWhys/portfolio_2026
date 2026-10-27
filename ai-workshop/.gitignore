@@ -1,0 +1,10 @@
+# OS cruft
+.DS_Store
+
+# Raw source screen recordings — remuxed into assets/cs1/*.mp4; keep the .mov out.
+assets/cs1/*.mov
+
+# Build pack / planning context — not part of the shippable artifact
+# (Part 6 packaging = index.html + /assets + README.md only). Contains
+# presenter-only notes containing commercially sensitive material; never commit.
+STORY-STUDIO-CONTEXT.md

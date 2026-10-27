@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://samwhys.github.io/portfolio_2026/sitemap-index.xml

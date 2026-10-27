@@ -1,0 +1,566 @@
+<!DOCTYPE html><html lang="en-GB"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>An AR sales tool that put the product in the room, not on a truck · Sam Perniskie</title><meta name="description" content="Sales teams were shipping large-format display units around the world to win early-stage conversations. I designed an internal AR tool that put the product in the client's space instead, scoped to an MVP that survived regional politics, validated with the sales reps who'd use it, and shipped as a shared platform for global sales teams."><link rel="canonical" href="https://samwhys.github.io/portfolio_2026/work/ar-sales-tool/"><link rel="preload" href="/portfolio_2026/_astro/fraunces-latin-opsz-normal.DihXLNYH.woff2" as="font" type="font/woff2" crossorigin><link rel="icon" type="image/svg+xml" href="/portfolio_2026/favicon.svg"><link rel="sitemap" href="/portfolio_2026/sitemap-index.xml"><meta name="generator" content="Astro v5.18.2"><script>
+      (function () {
+        if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        document.documentElement.classList.add('reveal-on');
+        function init() {
+          var els = document.querySelectorAll('.reveal, .reveal-block, .type-reveal, .line-reveal, .prose > h2, .hl');
+          if (!els.length) return;
+          // threshold 0 + a bottom rootMargin, NOT a ratio threshold: an
+          // element TALLER than the viewport (the hero headline on a narrow
+          // window) can never reach a 0.35 ratio, so it would never reveal and
+          // its text would strand invisible forever. This fires when the
+          // element crosses 15% up from the bottom edge, at any element size.
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add('is-revealed');
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { threshold: 0, rootMargin: '0px 0px -15% 0px' },
+          );
+          els.forEach(function (el) { io.observe(el); });
+          // Failsafe: text visibility must never depend on the observer. This
+          // replaces an earlier blanket timer that revealed EVERYTHING after
+          // 3s — which fired every below-the-fold heading while it was still
+          // off-screen, so the work-index titles had all animated before the
+          // reader ever reached them. This rescue is viewport-aware: it only
+          // reveals what is genuinely in view, using the same 15%-from-bottom
+          // line as the observer, so in normal operation it changes nothing and
+          // anything further down stays armed until the reader arrives.
+          function rescue() {
+            var pending = 0;
+            for (var i = 0; i < els.length; i++) {
+              var el = els[i];
+              if (el.classList.contains('is-revealed')) continue;
+              var r = el.getBoundingClientRect();
+              if (r.top < window.innerHeight * 0.85 && r.bottom > 0) el.classList.add('is-revealed');
+              else pending++;
+            }
+            if (!pending) window.removeEventListener('scroll', rescue);
+          }
+          window.addEventListener('scroll', rescue, { passive: true });
+          rescue();
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!('IntersectionObserver' in window)) return;
+        // This script lives in <head>, so the hero does not exist yet. Wait for
+        // the DOM, exactly as the reveal observer above does.
+        function init() {
+          var hero = document.querySelector('.hero');
+          if (!hero) return;
+          var root = document.documentElement;
+          new IntersectionObserver(
+            function (entries) {
+              root.classList.toggle('hero-gone', !entries[0].isIntersecting);
+            },
+            // Fire when the hero's last ~12% is leaving, so the masthead
+            // arrives as the headline goes, not after an empty beat.
+            { threshold: 0, rootMargin: '-12% 0px 0px 0px' },
+          ).observe(hero);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+        function fmt(v, decimals, hasComma) {
+          var s = v.toFixed(decimals);
+          if (hasComma) {
+            var parts = s.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            s = parts.join('.');
+          }
+          return s;
+        }
+        function init() {
+          var vals = [].slice.call(document.querySelectorAll('.ledger .value'));
+          var items = [];
+          vals.forEach(function (el) {
+            var full = el.textContent;
+            if (!/\d/.test(full)) return; // no number to roll
+            if (/[→–]/.test(full)) return; // arrow or en-dash range: leave the whole phrase static
+            var m = full.match(/\d[\d,]*\.?\d*/);
+            if (!m) return;
+            var numStr = m[0];
+            var it = {
+              el: el,
+              full: full,
+              target: parseFloat(numStr.replace(/,/g, '')),
+              decimals: (numStr.split('.')[1] || '').length,
+              hasComma: numStr.indexOf(',') !== -1,
+              pre: full.slice(0, m.index),
+              post: full.slice(m.index + numStr.length),
+            };
+            el.textContent = it.pre + fmt(0, it.decimals, it.hasComma) + it.post; // start at 0 (below fold = unseen)
+            items.push(it);
+          });
+          if (!items.length) return;
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                var it;
+                for (var i = 0; i < items.length; i++) if (items[i].el === e.target) it = items[i];
+                if (!it) return;
+                var dur = 1100, t0 = performance.now();
+                (function tick(now) {
+                  var p = Math.min(1, (now - t0) / dur);
+                  var eased = 1 - Math.pow(1 - p, 3); // ease-out: a meter settling, not a slot machine
+                  it.el.textContent = it.pre + fmt(it.target * eased, it.decimals, it.hasComma) + it.post;
+                  if (p < 1) requestAnimationFrame(tick);
+                  else it.el.textContent = it.full; // exact final string
+                })(t0);
+              });
+            },
+            { threshold: 0.6 },
+          );
+          items.forEach(function (it) { io.observe(it.el); });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><script>
+      (function () {
+        if (!window.matchMedia) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // Bare pages (the side quest) are mostly an iframe the ring can't follow into.
+        if (document.documentElement.hasAttribute('data-bare')) return;
+        var fine = matchMedia('(pointer: fine)').matches;
+
+        function init() {
+          var root = document.documentElement;
+          var wrap = document.createElement('div');
+          wrap.className = 'cursor';
+          wrap.setAttribute('aria-hidden', 'true');
+          var ring = null, dot = null;
+          if (fine) {
+            ring = document.createElement('span');
+            ring.className = 'cursor-ring';
+            dot = document.createElement('span');
+            dot.className = 'cursor-dot';
+            wrap.appendChild(ring);
+            wrap.appendChild(dot);
+          }
+          // A small pool, cycled: re-triggering one element's animation would
+          // cut off the previous ping mid-expansion on a fast stop-start.
+          var pings = [], PN = 3;
+          for (var i = 0; i < PN; i++) {
+            var s = document.createElement('span');
+            s.className = 'cursor-ping';
+            wrap.appendChild(s);
+            pings.push(s);
+          }
+          document.body.appendChild(wrap);
+          if (fine) root.classList.add('cursor-on');
+
+          var HOT = 'a,button,[role="button"],summary,label,input,select,textarea';
+          var REST_MS = 140, MOVE_EPS = 2.2, EASE = 0.18;
+          // Pulses fire on DISTANCE travelled, not on a timer, so the rhythm is
+          // set by how far the pointer has gone rather than by how long it has
+          // been held — a slow drag and a fast flick over the same span leave
+          // the same trail of pulses, just at different strengths.
+          var PULSE_DIST = 74, SPEED_EASE = 0.3;
+          var tx = 0, ty = 0, rx = 0, ry = 0;
+          var seen = false, moved = false, lastMove = 0, pi = 0, raf = 0, down = false;
+          var speed = 0, travel = 0, lastT = 0;
+
+          function ping(x, y, sp) {
+            var s = pings[pi];
+            pi = (pi + 1) % PN;
+            s.classList.remove('is-pinging');
+            s.style.left = x + 'px';
+            s.style.top = y + 'px';
+            // The ring's reach and how long it takes to get there both ramp
+            // with speed, so a fast pulse reads as a harder blast.
+            var k = sp > 34 ? 34 : sp;
+            s.style.setProperty('--ping-max', (2.6 + k * 0.11).toFixed(2));
+            s.style.animationDuration = (900 + k * 22).toFixed(0) + 'ms';
+            void s.offsetWidth; // reflow, so the animation restarts
+            s.classList.add('is-pinging');
+            // The smoke field listens for this and seeds motes from the pulse.
+            // Dispatched whether or not anything is listening: the cursor does
+            // not need to know the hero exists.
+            try {
+              dispatchEvent(new CustomEvent('sonar', { detail: { x: x, y: y, speed: sp } }));
+            } catch (err) { /* no CustomEvent constructor: ring still fires */ }
+          }
+
+          function loop(now) {
+            rx += (tx - rx) * EASE;
+            ry += (ty - ry) * EASE;
+            var rest = Math.abs(tx - rx) < 0.1 && Math.abs(ty - ry) < 0.1;
+            if (rest) { rx = tx; ry = ty; }
+            ring.style.translate = rx.toFixed(1) + 'px ' + ry.toFixed(1) + 'px';
+            dot.style.translate = tx.toFixed(1) + 'px ' + ty.toFixed(1) + 'px';
+
+            // The landing pulse. Speed is deliberately NOT zeroed first: the
+            // pulse you get on stopping is sized by how hard you arrived, so
+            // skidding to a halt blooms and drifting to one barely registers.
+            if (moved && now - lastMove > REST_MS) { moved = false; ping(tx, ty, speed); speed = 0; }
+            if (rest && !moved) { raf = 0; return; } // idle: stop burning frames
+            raf = requestAnimationFrame(loop);
+          }
+          // Only the persistent cursor needs a frame loop; the echo animates in
+          // CSS. Guarded so a synthetic mouse event on a touch device can never
+          // start a loop that would dereference a dot and ring that do not exist.
+          function wake() { if (!fine) return; if (!raf) raf = requestAnimationFrame(loop); }
+
+          addEventListener('pointermove', function (e) {
+            var touch = e.pointerType && e.pointerType !== 'mouse';
+            // A finger only draws while it is down — hover does not exist, and
+            // acting on stray touch-moves would trail motes off every scroll.
+            if (touch && !down) return;
+            var now = performance.now();
+            var dx = e.clientX - tx, dy = e.clientY - ty;
+            tx = e.clientX; ty = e.clientY;
+            // The FIRST move must not count: tx/ty start at 0,0, so its delta
+            // is the distance from the page corner and read as a 180 px/frame
+            // flick that fired a full-strength pulse the instant you arrived.
+            if (!seen) {
+              seen = true; rx = tx; ry = ty; lastT = now;
+              wrap.classList.add('is-live');
+              return;
+            }
+            var d = Math.sqrt(dx * dx + dy * dy);
+            // Speed in px per 60fps FRAME, derived from elapsed time rather
+            // than from per-event distance: event rate is a property of the
+            // mouse (125Hz vs 1000Hz), not of how fast the hand is moving, so
+            // measuring per event would have made identical gestures pulse
+            // differently on different hardware.
+            var dtms = now - lastT; lastT = now;
+            var v = dtms > 0 ? (d / dtms) * 16.67 : 0;
+            if (v > 90) v = 90;
+            speed += (v - speed) * SPEED_EASE;
+            if (d > MOVE_EPS) { moved = true; lastMove = now; }
+            // Travelling pulses, so motes are laid down along the path and not
+            // only where the pointer stops.
+            travel += d;
+            if (travel >= PULSE_DIST) { travel = 0; ping(tx, ty, speed); }
+            if (touch) return; // no cursor to move, no hover state to track
+            var t = e.target;
+            root.classList.toggle('cursor-hot', !!(t && t.closest && t.closest(HOT)));
+            wake();
+          }, { passive: true });
+
+          addEventListener('pointerdown', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') {
+              down = true;
+              // Seed the position rather than measuring from it, or the first
+              // move of this touch would read as a flick from wherever the
+              // LAST touch ended — the same bug the cursor had on first entry.
+              tx = e.clientX; ty = e.clientY; lastT = performance.now();
+              seen = true; travel = 0; speed = 0;
+              wrap.classList.add('is-live');
+              ping(tx, ty, 0); // every touch lands its own echo
+              return;
+            }
+            root.classList.add('cursor-down');
+          }, { passive: true });
+          addEventListener('pointerup', function (e) {
+            if (e.pointerType && e.pointerType !== 'mouse') { down = false; return; }
+            root.classList.remove('cursor-down');
+          }, { passive: true });
+          addEventListener('pointercancel', function () { down = false; }, { passive: true });
+          // Never leave the ring parked at the edge of the window.
+          if (fine) {
+            document.addEventListener('mouseleave', function () { wrap.classList.remove('is-live'); }, { passive: true });
+            document.addEventListener('mouseenter', function () { wrap.classList.add('is-live'); wake(); }, { passive: true });
+          }
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script><link rel="stylesheet" href="/portfolio_2026/_astro/about.CytIjRSb.css">
+<style>#figures-heading[data-astro-cid-egj5zfbs]{margin-block-end:var(--space-m)}.label-cell[data-astro-cid-egj5zfbs]{font-family:var(--font-display);font-size:var(--step-1);font-weight:600;letter-spacing:var(--tracking-snug);text-transform:none;color:var(--colour-text-body)}.media-description[data-astro-cid-autsfwhz]{font-size:var(--step--1);color:var(--colour-text-secondary);max-width:var(--measure)}#tldr-heading[data-astro-cid-by4zwojz]{margin-block-end:var(--space-m)}
+</style></head> <body> <a class="skip-link" href="#main">Skip to main content</a> <header class="site-header"> <div class="wrap"> <a class="masthead" href="/portfolio_2026/">Sam Perniskie</a>  <nav class="site-nav" aria-label="Site"> <ul> <li> <a href="/portfolio_2026/#work"> Work </a> </li><li> <a href="/portfolio_2026/about/"> About </a> </li><li> <a href="/portfolio_2026/cv/"> CV </a> </li><li> <a href="/portfolio_2026/side-quest/" class="nav-quest"> Side quest </a> </li> </ul> </nav> </div> </header> <main id="main"> <div class="read-progress" aria-hidden="true" data-astro-cid-by4zwojz></div> <div class="wrap" data-astro-cid-by4zwojz>  <article data-astro-cid-by4zwojz> <header class="study-lead" data-astro-cid-by4zwojz> <div class="headline" data-astro-cid-by4zwojz> <p class="study-kicker label" data-astro-cid-by4zwojz> <span class="num" data-astro-cid-by4zwojz>02</span> <span data-astro-cid-by4zwojz>Case study</span> </p> <h1 class="reveal study-title"><span class="reveal-w" style="--wi:0"><span class="reveal-i">An</span></span> <span class="reveal-w" style="--wi:1"><span class="reveal-i">AR</span></span> <span class="reveal-w" style="--wi:2"><span class="reveal-i">sales</span></span> <span class="reveal-w" style="--wi:3"><span class="reveal-i">tool</span></span> <span class="reveal-w" style="--wi:4"><span class="reveal-i">that</span></span> <span class="reveal-w" style="--wi:5"><span class="reveal-i">put</span></span> <span class="reveal-w" style="--wi:6"><span class="reveal-i">the</span></span> <span class="reveal-w" style="--wi:7"><span class="reveal-i">product</span></span> <span class="reveal-w" style="--wi:8"><span class="reveal-i">in</span></span> <span class="reveal-w" style="--wi:9"><span class="reveal-i">the</span></span> <span class="reveal-w" style="--wi:10"><span class="reveal-i">room,</span></span> <span class="reveal-w" style="--wi:11"><span class="reveal-i">not</span></span> <span class="reveal-w" style="--wi:12"><span class="reveal-i">on</span></span> <span class="reveal-w" style="--wi:13"><span class="reveal-i">a</span></span> <span class="reveal-w" style="--wi:14"><span class="reveal-i">truck</span></span></h1> <p class="study-outcome" data-astro-cid-by4zwojz>Sales teams were shipping large-format display units around the world to win early-stage conversations. I designed an internal AR tool that put the product in the client&#39;s space instead, scoped to an MVP that survived regional politics, validated with the sales reps who&#39;d use it, and shipped as a shared platform for global sales teams.</p> </div> <dl class="meta"> <div> <dt>Role</dt> <dd>UX/UI Designer</dd> </div> <div> <dt>Team</dt> <dd>Me on UX/UI, with regional sales stakeholders and a development team</dd> </div> <div> <dt>Where &amp; when</dt> <dd>A display-hardware manufacturer, 2023</dd> </div> <div> <dt>Scope</dt> <dd>Internal mobile AR tool for global sales teams</dd> </div> <div> <dt>I owned</dt> <dd> <ul> <li>Discovery with sales stakeholders</li><li>Competitive review of AR interaction patterns</li><li>User flows, wireframes, interactive prototype</li><li>Usability testing with internal sales users</li> </ul> </dd> </div> <div> <dt>I influenced</dt> <dd> <ul> <li>The phased MVP roadmap</li><li>Which product categories shipped first</li> </ul> </dd> </div> <div> <dt>Not mine</dt> <dd> <ul> <li>Production code</li><li>The revenue attribution model</li><li>Regional rollout decisions</li> </ul> </dd> </div> </dl> </header> <section class="section tldr" aria-labelledby="tldr-heading" data-astro-cid-by4zwojz> <h2 id="tldr-heading" class="label" data-astro-cid-by4zwojz>In short</h2> <ul data-astro-cid-by4zwojz> <li data-astro-cid-by4zwojz>Demonstrating large-format displays meant shipping physical units: expensive, slow, and useless for showing scale and fit in the client&#39;s own space.</li><li data-astro-cid-by4zwojz>I designed an internal mobile AR tool that let reps place products into real environments mid-conversation, and generate a custom sales sheet or book a demo from the same flow.</li><li data-astro-cid-by4zwojz>Limited budget and competing regional demands forced a real scoping decision: an MVP around the highest-value demo flows, with everything else phased, not launch-blocking.</li><li data-astro-cid-by4zwojz>Tested with internal sales users before development: both test missions completed by 4 of 5 and 5 of 5 testers, and 5 of 8 survey respondents said they&#39;d use it regularly.</li> </ul> </section> <section class="section" aria-labelledby="figures-heading" data-astro-cid-egj5zfbs><h2 id="figures-heading" class="label" data-astro-cid-egj5zfbs>
+Results, labelled
+</h2><p class="visually-hidden" data-astro-cid-egj5zfbs>
+Every figure carries its evidence type so you can tell a measurement from an estimate.
+</p><div class="ledger" data-astro-cid-egj5zfbs><div class="ledger-row" data-astro-cid-egj5zfbs><span class="value" data-astro-cid-egj5zfbs>4 of 5</span><span class="label-cell label" data-astro-cid-egj5zfbs>Usability mission A, completion<span class="chip chip--measured">Measured</span></span><span class="method" data-astro-cid-egj5zfbs>Moderated test missions (Maze), 5 internal sales testers. Avg 35.4 s, 10% misclick rate.</span><span class="caveat" data-astro-cid-egj5zfbs>Small internal sample, treated as directional input for iteration, not as proof. It did its job: navigation, labelling, and the AR entry point were simplified before development.</span></div><div class="ledger-row" data-astro-cid-egj5zfbs><span class="value" data-astro-cid-egj5zfbs>5 of 5</span><span class="label-cell label" data-astro-cid-egj5zfbs>Usability mission B, completion<span class="chip chip--measured">Measured</span></span><span class="method" data-astro-cid-egj5zfbs>Same setup. Avg 20.2 s, 4.2% misclick rate.</span></div><div class="ledger-row" data-astro-cid-egj5zfbs><span class="value" data-astro-cid-egj5zfbs>5 of 8</span><span class="label-cell label" data-astro-cid-egj5zfbs>Would use the tool regularly<span class="chip chip--measured">Measured</span></span><span class="method" data-astro-cid-egj5zfbs>Post-test survey of internal sales respondents.</span></div></div><ul class="evidence-legend" data-astro-cid-egj5zfbs><li data-astro-cid-egj5zfbs><span class="chip chip--measured">Measured</span> A real number, with a method someone could repeat.
+</li><li data-astro-cid-egj5zfbs><span class="chip chip--directional">Directional</span> A defensible estimate by the person who did the
+          work.
+</li><li data-astro-cid-egj5zfbs><span class="chip chip--qualitative">Qualitative</span> A concrete observation or outcome, no number
+          attached.
+</li></ul></section> <section class="section" aria-label="Key artefact" data-astro-cid-by4zwojz> <figure class="media-figure" data-astro-cid-autsfwhz><div class="media-stage" style="aspect-ratio: 1280 / 720" data-astro-cid-autsfwhz><video controls preload="none" playsinline poster="/portfolio_2026/media/ar-sales-tool/walkthrough-poster.jpg" aria-label="Recording of the AR sales tool used end to end on a phone, from product choice to a sent sales sheet" width="1280" height="720" data-astro-cid-autsfwhz><source src="/portfolio_2026/media/ar-sales-tool/walkthrough.mp4" type="video/mp4" data-astro-cid-autsfwhz><track kind="captions" src="/portfolio_2026/media/ar-sales-tool/walkthrough.vtt" srclang="en" label="English" data-astro-cid-autsfwhz></video><button type="button" class="media-expand" data-sheet-open hidden data-astro-cid-autsfwhz>Full screen</button></div><figcaption data-astro-cid-autsfwhz>The whole loop in one take. It ends where the flow is designed to end, on the confirmation that says exactly where the sales sheet went.</figcaption><p class="media-description" data-astro-cid-autsfwhz>What the clip shows: A 39-second silent recording of the tool used end to end on a phone. It opens on the home screen, enters the app, and moves through choosing a product category, a room type and a screen size. The rep then scans the wall of the room they are standing in, places a large-format display against it at full scale, and views it in the space. It ends in the custom sales sheet: the form, and then the confirmation that the sheet is on its way by email. The name and email fields in that form are blurred in the source recording.</p></figure>
+
+    <dialog class="media-sheet" aria-label="Recording of the AR sales tool used end to end on a phone, from product choice to a sent sales sheet" data-astro-cid-autsfwhz><div class="sheet-bar" data-astro-cid-autsfwhz><p class="sheet-meta" data-astro-cid-autsfwhz>Walkthrough</p><button type="button" class="sheet-close" data-sheet-close data-astro-cid-autsfwhz>
+Close <span class="sheet-kbd" data-astro-cid-autsfwhz>Esc</span></button></div><div class="sheet-stage" data-sheet-stage data-astro-cid-autsfwhz></div><p class="sheet-cap" data-astro-cid-autsfwhz>The whole loop in one take. It ends where the flow is designed to end, on the confirmation that says exactly where the sales sheet went.</p></dialog><script>
+  (function () {
+    // Progressive enhancement only. No <dialog> support means the inline video
+    // and the native player's own fullscreen button are what you get.
+    if (typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
+
+    var sheet = document.querySelector('.media-sheet');
+    var home = document.querySelector('.media-stage');
+    if (!sheet || !home) return;
+    var stage = sheet.querySelector('[data-sheet-stage]');
+    var vid = home.querySelector('video');
+    var opener = home.querySelector('[data-sheet-open]');
+    var closer = sheet.querySelector('[data-sheet-close]');
+    if (!stage || !vid || !opener || !closer) return;
+
+    opener.hidden = false;
+
+    // Moving a <video> between parents resets playback in some engines, so
+    // carry the position and the playing state across by hand.
+    function move(to, first) {
+      var at = vid.currentTime;
+      var playing = !vid.paused && !vid.ended;
+      if (first) to.insertBefore(vid, to.firstChild);
+      else to.appendChild(vid);
+      if (at) vid.currentTime = at;
+      if (playing) {
+        var p = vid.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+    }
+
+    opener.addEventListener('click', function () {
+      move(stage, false);
+      sheet.showModal();
+    });
+    closer.addEventListener('click', function () {
+      sheet.close();
+    });
+    // Clicking the backdrop lands on the dialog element itself.
+    sheet.addEventListener('click', function (e) {
+      if (e.target === sheet) sheet.close();
+    });
+    // Restore on ANY close path. Deliberately not the 'close' event: measured
+    // in a current engine that closes the dialog without dispatching either
+    // 'close' or 'cancel', which left the video stranded in a hidden dialog
+    // and the figure empty. Watching the open attribute is path-independent
+    // and catches the button, the backdrop, Esc and anything added later.
+    function restore() {
+      if (!sheet.open && stage.contains(vid)) move(home, true);
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(restore).observe(sheet, {
+        attributes: true,
+        attributeFilter: ['open'],
+      });
+    }
+    // Harmless if the engine does fire it, and covers a browser with no
+    // MutationObserver.
+    sheet.addEventListener('close', restore);
+  })();
+</script> </section> <div class="section prose" data-astro-cid-by4zwojz> <p><strong>What I owned:</strong> the discovery, the flows, the prototype, and the testing.
+The development team owned the build; the business owned the rollout and the
+revenue model.</p>
+<p><em>Anonymised in prose: employer and internal product names are withheld from
+the text. The design artefacts are shown as built, with clearance.</em></p>
+<h2 id="discover-the-demo-had-a-physics-problem"><span class="phase">Discover </span>The demo had a physics problem</h2>
+<p>Early-stage sales conversations for large-format displays had a physics
+problem. Shipping a demo unit to a prospect was expensive, slow, and
+environmentally inefficient, and a
+static image can’t answer the question the client is actually asking: what
+does this look like at scale, on my wall, in my space? Every shipped pallet
+was cost and delay spent before anyone knew whether the conversation was
+serious, and every conversation without hardware leaned on imagination.</p>
+<p>I started with the people who lived inside that problem: sales stakeholders
+across regions. Discovery discussions broke down how teams actually
+demonstrated large-format products, where the existing process failed, and
+what an AR tool would have to support in a real, live conversation. Three
+priorities came out of that work:</p>
+<ul>
+<li>Demonstrate product scale and placement without shipping physical units.</li>
+<li>Be simple enough to use during a live client conversation.</li>
+<li>Prioritise the product categories and demo flows with the highest sales
+value first.</li>
+</ul>
+<p>Discovery also surfaced what could kill the project, and that shaped what
+came next more than anything else.</p>
+<h2 id="define-narrow-on-purpose"><span class="phase">Define </span>Narrow on purpose</h2>
+<p>Three constraints framed the definition. <strong>Budget:</strong> resources covered the
+highest-value demo flows, not the catalogue. <strong>Geography:</strong> regional teams
+wanted different product lines first, and each had reasons. <strong>Scepticism:</strong>
+some teams wouldn’t commit resources before seeing proof the tool could hold
+up in a real sales conversation; the argument had to be won with an
+artefact, not a proposal.</p>
+<p>So the problem statement got narrow on purpose: let a rep place the real
+product, at real scale, into the client’s actual room, mid-conversation, and
+let the same flow end in a custom sales sheet or a booked demo rather than a
+dead stop.</p>
+<p>The defining decision was scope. The pressure was to launch with every
+region’s products represented; the decision was to phase: ship the flows and
+categories that made the strongest demos first, and treat additional lines as
+roadmap, not launch blockers. The phased roadmap was as much a
+stakeholder-management artefact as a planning one: it let me say yes to
+everyone about <em>eventually</em> while protecting what shipped <em>first</em>. That’s
+what let the project exist at all inside its budget.</p>
+<h2 id="ideate-confidence-not-novelty"><span class="phase">Ideate </span>Confidence, not novelty</h2>
+<p>With the scope set, the open question was interaction: what should AR feel
+like inside a sales conversation? I reviewed a range of mobile AR apps across
+product visualisation, object placement, onboarding, and spatial scanning,
+looking for the patterns that matter when the person holding the phone is
+mid-pitch. Five findings became the interaction rules:</p>
+<ul>
+<li>Users need clear guidance before entering AR mode.</li>
+<li>Placement has to feel immediate and forgiving.</li>
+<li>Controls stay minimal during live demos.</li>
+<li>Product information must be reachable without leaving the AR view.</li>
+<li>The experience needed to support confidence, not novelty.</li>
+</ul>
+<p>The last one is the thesis. In a live demo, novelty is a liability; the
+rejected alternative was the show-off version of AR, and rejecting it was the
+point: the tool’s job is to keep the rep’s conversation moving. These rules
+shaped the flow structure, the onboarding, and the AR interaction model.</p>
+<p>Then I mapped the core demo flows: select a product category and SKU, enter
+AR, place the product in the client’s space, reach product details, compare or
+switch products mid-demo, and exit into a custom sales sheet or a booked demo.</p>
+<figure class="prose-figure">
+<img alt="User-flow diagram for the AR sales tool: from device choice through product selection, wall scanning and AR placement, to exits for booking a demo or generating a custom sales sheet, with a side flow for switching products mid-demo." loading="lazy" decoding="async" fetchpriority="auto" width="780" height="720" src="/portfolio_2026/_astro/user-flow.Bi-QnKAB_1NFUbU.webp" >
+<figcaption>Two exits, and a side branch back to placement so a rep can switch products without leaving the room they are standing in.</figcaption></figure>
+<h2 id="design-the-rules-become-the-interface"><span class="phase">Design </span>The rules become the interface</h2>
+<p>The flows became wireframes, and the wireframes became an interactive
+prototype of the full loop, built to find out whether the flow held up for
+a rep in a live client conversation before further development effort was
+committed.</p>
+<p>The first-run experience carries the “guidance before AR” rule: an eight-step
+walkthrough that runs from choosing a product through scanning the wall,
+placing the product, capturing a photo and generating a salesheet, with a skip
+control on every screen for a rep who has seen it before.</p>
+<figure class="prose-figure">
+<img alt="Four onboarding screens for the AR sales tool: a branded splash screen, then three of the eight guided steps (select a product, place it on the wall, and close the AR viewer), each with a skip link and progress dots." loading="lazy" decoding="async" fetchpriority="auto" width="1656" height="844" src="/portfolio_2026/_astro/onboarding-flow.D6GZLkW1_1daDyY.webp" >
+<figcaption>Guidance before AR, the first of the five interaction rules, as the first thing the product does.</figcaption></figure>
+<p>The working screens carry the rest of the rules: a product list with
+expandable cards under three category tabs, product detail one tap deep, and
+the two conversion exits the flow promises: a custom sales sheet generated
+and emailed from inside the tool (with a success state that says exactly
+where it went), and a book-a-demo form.</p>
+<p><img alt="Four core screens of the AR sales tool: a product list with expandable cards under three category tabs, the custom sales-sheet form, its success confirmation announcing the sheet is on its way by email, and the book-a-demo form." loading="lazy" decoding="async" fetchpriority="auto" width="1656" height="844" src="/portfolio_2026/_astro/core-screens.Ca0DxyNs_Z1NJz4u.webp" ></p>
+<p>Design didn’t stop at screens. Components were documented with anatomy,
+states, and layout specs for the development handoff; the top-navigation
+component below is one of nine component specifications on that board.</p>
+<p>The handoff was not a drop. Through implementation I stayed with the
+development team to keep the design intent intact while the build met its real
+constraints: how AR behaved on the device, how product assets were handled,
+and what held up on a phone. In practice that meant clarifying interaction
+states, reviewing builds, documenting edge cases, and simplifying flows where
+a constraint made the original version unreasonable. Regular check-ins with
+engineering and with regional stakeholders kept the thing pointed at the sales
+goals it started from.</p>
+<p><img alt="Specification board for the tool&amp;#x27;s top-navigation component: an anatomy diagram with numbered parts, their text styles and states, and layout diagrams annotating auto-layout direction, padding, and item spacing." loading="lazy" decoding="async" fetchpriority="auto" width="1049" height="2400" src="/portfolio_2026/_astro/component-spec.Be3U48Cj_1sgYx2.webp" ></p>
+<h2 id="validate-tested-before-anyone-built"><span class="phase">Validate </span>Tested before anyone built</h2>
+<p>The prototype went in front of internal sales users with structured missions
+before anyone wrote production code, because the cost of a wrong flow drops
+by an order of magnitude before development. Both missions completed (4 of 5
+and 5 of 5 testers) and the misses were exactly the useful kind. What they
+located was hesitation at AR setup, and the places where navigation,
+labelling and the AR entry point had to be simplified before a rep could keep
+a conversation moving. Those simplifications landed before the build started.</p>
+<p>The honest frame for these numbers: 5 testers and 8 survey respondents is a
+small internal sample, treated as directional input for iteration rather than
+proof. That is what the test was for; 5 of 8 respondents said they’d use the
+tool regularly, and the same survey said when: trade shows, new prospects,
+earlier in the sales process, each picked by three quarters of the
+respondents who got that far. Closing a deal came last, at half. Reps read
+this as an early-funnel tool, which is exactly what the MVP had been scoped
+to be. That’s adoption intent with a context attached, which is more useful
+to a roadmap than a bigger number without one.</p>
+<p>The least flattering number is worth printing too. Testers also rated how
+intuitive each flow felt on a five-point scale: on the first mission one of
+the five put it at the very bottom, and on the second none fell below the
+middle. These were two missions inside one session rather than a before and
+an after, so the second is not evidence that the first was fixed. It is just
+what the room thought at the time.</p>
+<h2 id="results--learnings-what-happened-and-what-held-up"><span class="phase">Results &#x26; learnings </span>What happened, and what held up</h2>
+<p>The tool shipped and became a shared platform for global sales teams, and
+the clearest adoption signal was the queue of regions asking to get more of
+their catalogue into it. Post-launch feedback ran the same direction the
+scoping fight had: more SKUs, more categories, more region-specific
+scenarios, including one business unit asking for a whole new product
+category in the tool’s taxonomy. The structure absorbed those requests
+without redesigning the core experience, which is what the phased roadmap
+was for.</p>
+<p>On the numbers, the honest version: the usability results above are real,
+small-sample, and were used as iteration input rather than victory laps. And
+the business reported a <strong>$10M USD revenue increase in the first three months
+post-launch</strong> with the tool supporting upselling during demos. I treat that
+figure carefully and it does not appear in this study’s evidence ledger: I
+didn’t own the attribution model, so it’s a reported business outcome I
+contributed to, not a measurement I can defend line-by-line. The operational
+outcome I can stand fully behind: early-stage conversations stopped requiring
+a shipped pallet, along with the cost and the environmental load of moving
+one.</p>
+<p>What this project taught me, grounded in what actually happened:</p>
+<ul>
+<li><strong>The roadmap was a design artefact.</strong> The phasing decision did more to
+ship this product than any screen: it converted regional pressure into
+sequence instead of scope.</li>
+<li><strong>Testing before building is the cheap kind of correct.</strong> Navigation,
+labelling, and AR entry were all fixed for the cost of a prototype round,
+not a development cycle.</li>
+<li><strong>Conversation-first held up.</strong> Post-launch requests asked for more
+catalogue inside the same experience, not changes to the core flow. The
+restraint in the AR interaction model was the right bet.</li>
+</ul> </div> <aside class="side-quest-path" aria-labelledby="side-quest-heading" data-astro-cid-by4zwojz> <p id="side-quest-heading" class="label" data-astro-cid-by4zwojz>Side quest</p> <p data-astro-cid-by4zwojz>
+This work is chapter 5 of <em data-astro-cid-by4zwojz>How I transformed the company</em>, a short
+              arcade game about how my team's work changed.
+</p> <a class="btn btn--ghost" href="/portfolio_2026/side-quest/#chapter-5" data-astro-cid-by4zwojz>
+Play chapter 5 →
+</a> </aside> <footer class="study-next" data-astro-cid-by4zwojz> <a href="/portfolio_2026/#work" data-astro-cid-by4zwojz>← Index</a> <a href="/portfolio_2026/work/universe/" data-astro-cid-by4zwojz>Next: UNIVERSE: a launch site and design system for an education metaverse →</a> </footer> </article> </div>  </main> <footer class="site-footer">  <div class="wrap"> <p class="label footer-kicker">Contact</p> <p class="footer-cta">
+Got something to take end to end?<br> <a href="mailto:sperniskie@gmail.com">sperniskie@gmail.com</a> </p> <div class="footer-cols"> <nav aria-label="Footer"> <ul> <li><a href="/portfolio_2026/#work">Work</a></li> <li><a href="/portfolio_2026/about/">About</a></li> <li><a href="/portfolio_2026/cv/">CV</a></li> <li><a href="https://www.linkedin.com/in/sam-perniskie">LinkedIn</a></li> <li><a href="https://www.behance.net/SamPerniskie">Behance</a></li> <li><a href="/portfolio_2026/accessibility/">Accessibility statement</a></li> </ul> </nav> <p class="colophon"> Sam Perniskie · Taipei, Taiwan. Set in Fraunces, Source Serif 4 &amp; IBM Plex Mono.
+            Hand-built in Astro: no tracking, every figure evidence-tagged, no frameworks,
+            no bundled JavaScript, only hand-written inline scripts.
+<a href="/portfolio_2026/side-quest/" aria-label="Insert coin: play Metal Slide, a short arcade game about my team's work">Insert coin.</a> </p> </div> </div> </footer> <aside class="ms-invite" id="ms-invite" aria-label="Easter egg" style="--sam: url(/portfolio_2026/media/metal-slide/sam-invite.png)" hidden> <div class="ms-invite-bubble"> <p class="ms-invite-ask">Are you ready for an adventure?</p> <div class="ms-invite-actions"> <a class="btn btn--fill" href="/portfolio_2026/side-quest/">Let's go!</a> <button type="button" class="btn btn--ghost" data-invite-close>Not now</button> </div> </div> <span class="ms-invite-sam" aria-hidden="true"></span> </aside> <script>
+      (function () {
+        var el = document.getElementById('ms-invite');
+        if (!el || !window.requestAnimationFrame) return;
+        var KEY = 'metalSlide.invite';
+        function get(store) { try { return window[store].getItem(KEY); } catch (e) { return null; } }
+        function put(store, v) { try { window[store].setItem(KEY, v); } catch (e) { /* not remembered */ } }
+        // Once per visit (this tab's session). A "played" flag from the old
+        // never-again rule may still sit in localStorage: it is ignored now.
+        if (get('sessionStorage')) return;
+        var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Only scrolling the visitor does counts: a scroll position the browser
+        // restores on load comes before any wheel, touch, key or click.
+        var acted = false, timer = 0;
+        function act() { acted = true; }
+        ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (t) {
+          addEventListener(t, act, { passive: true, capture: true });
+        });
+
+        // About 80ms after the visitor starts scrolling, and never over an open dialog.
+        function onScroll() {
+          if (!acted || timer) return;
+          timer = setTimeout(function () {
+            timer = 0;
+            if (!document.querySelector('dialog[open]')) show();
+          }, 80);
+        }
+        function show() {
+          removeEventListener('scroll', onScroll);
+          put('sessionStorage', 'shown');
+          el.hidden = false;
+          requestAnimationFrame(function () { el.classList.add('is-in'); });
+        }
+        function hide() {
+          if (el.hidden || el.classList.contains('is-out')) return;
+          el.classList.remove('is-in');
+          el.classList.add('is-out');
+          setTimeout(function () { el.hidden = true; }, still ? 0 : 320);
+        }
+        el.querySelector('[data-invite-close]').addEventListener('click', hide);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && !el.hidden && !document.querySelector('dialog[open]')) hide();
+        });
+        document.addEventListener('focusin', function (e) {
+          if (el.hidden || el.contains(e.target) || !e.target.getBoundingClientRect) return;
+          var a = el.getBoundingClientRect(), b = e.target.getBoundingClientRect();
+          if (b.right > a.left && b.left < a.right && b.bottom > a.top && b.top < a.bottom) hide();
+        });
+        addEventListener('scroll', onScroll, { passive: true });
+      })();
+    </script>  </body> </html> 
