@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Business — Design System Rollout Dashboard</title>
+<script src="../vendor/chart.umd.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f5f7fa; --card:#ffffff; --ink:#15233b; --muted:#5d6b82; --line:#e3e8f0;
+  --blue:#0c4a9e; --blue-soft:#e8f0fb;
+  --green:#1d8a4e; --green-soft:#e4f5ec;
+  --amber:#b8740c; --amber-soft:#fcf1de;
+  --red:#c0392b; --red-soft:#fbe7e4;
+  --grey:#6b7688;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 56px}
+h1{font-size:22px;margin:0 0 2px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:30px 0 12px;font-weight:700}
+.sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+.banner{background:var(--amber-soft);border:1px solid #f0d49a;color:#7a4e07;border-radius:10px;padding:12px 14px;font-size:13px;margin:0 0 20px;display:flex;gap:10px;align-items:flex-start}
+.banner b{color:#653f04}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12.5px;color:var(--muted);margin:0 0 6px}
+.meta span b{color:var(--ink);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .n{font-size:26px;font-weight:700;line-height:1.1}
+.kpi .l{font-size:12px;color:var(--muted);margin-top:3px}
+.kpi .x{font-size:11.5px;color:var(--grey);margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h3{margin:0 0 12px;font-size:13.5px;font-weight:700}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.02em}
+.c-mig{background:var(--green-soft);color:var(--green)}
+.c-part{background:var(--amber-soft);color:var(--amber)}
+.c-near{background:#e4f3dc;color:#3f8a3f}
+.c-leg{background:var(--red-soft);color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap}
+th.num,td.num{text-align:right}
+tbody tr:hover{background:#fafbfe}
+.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--ink)}
+.bar{height:7px;border-radius:6px;background:#eef1f6;overflow:hidden;min-width:56px}
+.bar>i{display:block;height:100%;border-radius:6px}
+.flag{display:inline-block;font-size:10.5px;font-weight:600;color:var(--red);background:var(--red-soft);border-radius:5px;padding:1px 6px;margin:1px 3px 1px 0}
+.flag.warn{color:var(--amber);background:var(--amber-soft)}
+.finding{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:9px;padding:12px 14px;margin-bottom:10px;background:var(--card)}
+.finding .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.finding .t{font-weight:700;font-size:13.5px}
+.finding p{margin:6px 0 0;color:var(--muted);font-size:12.5px}
+.sev{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+.sev.high{background:var(--red-soft);color:var(--red)}
+.sev.med{background:var(--amber-soft);color:var(--amber)}
+.sev.low{background:var(--blue-soft);color:var(--blue)}
+.conf{font-size:10.5px;color:var(--grey);font-weight:600;margin-left:6px}
+.legend{font-size:11.5px;color:var(--muted);margin-top:8px}
+.foot{margin-top:34px;font-size:11.5px;color:var(--grey);border-top:1px solid var(--line);padding-top:14px}
+.foot li{margin-bottom:5px}
+.chartbox{position:relative;height:300px}
+.chartbox.sm{height:230px}
+.evidence{font-size:11px;color:var(--grey);background:#f7f9fc;border-radius:6px;padding:3px 7px;font-family:ui-monospace,Menlo,monospace}
+.pglink{display:inline-block;font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-soft);border:1px solid #c5dbf6;border-radius:6px;padding:3px 9px;margin:9px 6px 0 0;text-decoration:none}
+.pglink:hover{background:#d7e6fb;border-color:#a9caf3}
+</style>
+
+  <style>
+    /* ===== Portfolio site chrome ==========================================
+       Lets a reader navigate back to the main site instead of dead-ending in
+       the artefact. Deliberately uses SYSTEM fonts and no network requests:
+       this deck's whole point is that it runs offline from a filesystem with
+       no CDN, and the chrome must not be what breaks that. Night palette,
+       matching the portfolio, so it reads as site furniture framing a light
+       document rather than part of the deck. */
+    .site-chrome{--c-night:#101229;--c-paper:#faf8f4;--c-dim:#cdd3f2;--c-accent:#9db2ff;
+      background:var(--c-night);color:var(--c-dim);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      font-size:15px;line-height:1.5}
+    .site-chrome a{color:var(--c-dim);text-decoration:none}
+    .site-chrome a:hover,.site-chrome a:focus-visible{color:var(--c-paper)}
+    .site-chrome a:focus-visible{outline:3px solid var(--c-accent);outline-offset:3px;border-radius:3px}
+    .sc-inner{max-width:1100px;margin:0 auto;padding:14px 24px;
+      display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .sc-mast{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--c-paper)}
+    .sc-nav{display:flex;gap:22px;list-style:none;margin:0;padding:0;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+    .sc-foot .sc-inner{align-items:flex-start;padding:26px 24px 30px}
+    .sc-back{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+    .sc-note{margin:8px 0 0;max-width:62ch;font-size:13px;color:#8f97c4}
+    @media (max-width:640px){.sc-inner{padding:12px 16px}.sc-nav{gap:14px}}
+  </style>
+</head>
+<body>
+
+<div class="site-chrome"><div class="sc-inner">
+  <a class="sc-mast" href="/portfolio_2026/">Sam Perniskie</a>
+  <a class="sc-back" href="/portfolio_2026/ai-workshop/index.html">&larr; Back to the talk</a>
+</div></div>
+
+<div class="wrap">
+  <h1>Business — Design System Rollout</h1>
+  <p class="sub">Adoption of the business design system across <b>/global/business/</b> · rendered-style audit</p>
+
+  <div class="banner">
+    <span>⚠</span>
+    <div><b>Compliance findings unscoped.</b> Per-section rollout status was not confirmed, so completeness here reflects <b>observed DS-token adoption in the rendered CSS</b>, not approved drift. Pages that are intentionally not-yet-migrated will read as "Legacy" until you confirm which sections are in scope. Re-run with migration status to convert these to confirmed drift vs known-unmigrated.</div>
+  </div>
+
+  <div class="meta">
+    <span><b>Target:</b> /global/business/</span>
+    <span><b>Crawl mode:</b> sample (stratified)</span>
+    <span><b>Pages sampled:</b> 18 of 22 discoverable</span>
+    <span><b>DS source:</b> Figma · the business design system</span>
+    <span><b>a11y tool:</b> axe-core 4.10.2 (8 pages)</span>
+    <span><b>Date:</b> 2026-06-04</span>
+  </div>
+
+
+<style>
+  /* ===== PRIVACY REDACTION (public build) =====================================
+     Published to show how the rollout-audit tool works, not to publish a real
+     company's page inventory. Page identifiers are blurred wherever they appear;
+     completeness scores, bands and the charts stay readable, because those are
+     what demonstrate the tool's reasoning. The blur is presentation only — every
+     real path was ALSO replaced at source, so view-source reveals nothing. */
+  .redact-note{display:flex;gap:.7rem;align-items:flex-start;max-width:78ch;
+    margin:0 0 1.1rem;padding:.85rem 1rem;border:1px solid var(--line);
+    border-left:4px solid var(--ink);border-radius:10px;background:var(--surface)}
+  .redact-note b{display:block;margin-bottom:.15rem}
+  .redact-note p{margin:0;font-size:.86rem;color:var(--muted);line-height:1.55}
+  /* Page identifiers only: first column of every data table, and inline paths. */
+  table td:first-child,
+  table th[scope="row"],
+  #crawlTbl td:nth-child(2),
+  a.path,
+  #crawlSummary,
+  code{filter:blur(5px);user-select:none}
+  /* the crawl URLs are links — kill navigation as well as legibility */
+  a.path{pointer-events:none}
+  /* row-number column stays readable: it identifies nothing */
+  #crawlTbl td:first-child{filter:none}
+  /* Keep the numeric/score columns and chips crisp. */
+  table td.num, table td .chip{filter:none}
+</style>
+<div class="redact-note">
+  <span aria-hidden="true">&#128274;</span>
+  <p><b>Page identifiers redacted.</b>
+  This audited a live corporate site, so page names and URLs are blurred and the
+  underlying values replaced. Completeness scores, bands and charts are left intact:
+  the point of the artefact is the method — what "rollout completeness" is composed of,
+  and how design-system token adoption is detected in rendered CSS.</p>
+</div>
+  <h2>Overall performance</h2>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid2" style="margin-top:16px">
+    <div class="card">
+      <h3>Rollout completeness by page (legacy → fully migrated)</h3>
+      <div class="chartbox"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Rollout completeness bands</h3>
+      <div class="chartbox sm"><canvas id="tierChart"></canvas></div>
+      <p class="legend">Each slice = number of sampled pages in that completeness band (hover for the count), using the same four colours as the bar chart above. <b>Token adoption is the main driver:</b> the only <span class="chip c-mig">Fully migrated</span> page (Open Frame) carries full-body DS tokens; zero-token pages fall to <span class="chip c-leg">Legacy</span>; the 9-token "chrome-only" pages (shared <code>--brand-blue*</code> header/footer set) spread across <span class="chip c-part">Partial</span> and <span class="chip c-near">Near complete</span> depending on their structure and SEO.</p>
+    </div>
+  </div>
+
+  <h2>Incomplete pages needing review</h2>
+  <div class="card" style="padding:6px 6px 2px">
+    <table id="tbl">
+      <thead><tr>
+        <th data-k="score">Page</th>
+        <th class="num" data-k="score">Completeness</th>
+        <th data-k="band">Band</th>
+        <th class="num" data-k="vs">DS tokens</th>
+        <th data-k="issues">Top issues</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="legend">Click a column header to sort. Completeness is a <b>heuristic composite</b> (token adoption 40 · page SEO meta 25 · single H1 15 · image-alt coverage 20). The component signals (token count, title, meta, H1, alt) are each <b>deterministic</b> from the rendered DOM.</p>
+
+  <h2>Accessibility — axe-core 4.10.2 (deterministic)</h2>
+  <p class="sub">Automated scan of 8 pages: the 5 lowest-completeness product pages plus <b>the 3 original solutions pages</b>. <span class="chip c-leg">serious</span> = WCAG-tagged failures; <code>order×N</code>, <code>region</code>, landmark and heading rules are axe best-practice heuristics not tied to a specific SC. <b>Note:</b> the three newer solutions pages (solutions-a2, solutions-d, solutions-b2) could not be axe-scanned — they block external script injection via a stricter CSP. They need a browser-extension or headless axe run with CSP disabled to audit.</p>
+  <div class="card" style="padding:6px 6px 2px">
+    <table id="axeTbl">
+      <thead><tr>
+        <th data-k="p">Page</th><th data-k="sec">Section</th><th class="num" data-k="total">Total</th>
+        <th>Serious (WCAG)</th><th>Heading issues</th><th>Landmark / region</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="legend"><b>Headline:</b> all 8 audited pages fail <code>link-name</code> (links with no discernible text) — WCAG 2.4.4 / 4.1.2, serious — strong evidence of a shared nav/footer component. Solutions add their own serious failures: <code>solutions-b</code> has <code>aria-prohibited-attr</code> (4.1.2); <code>solutions-a</code> ships <b>duplicate banner + main landmarks</b> and heading-order broken across 9 nodes. axe found <b>no</b> <code>image-alt</code> violations anywhere, so the earlier "missing alt" signal was mostly decorative imagery — downgraded.</p>
+
+  <h2>Top findings</h2>
+  <div id="findings"></div>
+
+  <h2>Design critique — homepage (consent dismissed)</h2>
+  <p class="sub"><b>First impression:</b> confident hero ("Your Business. Our Solutions.", 48px/700) on a sane type scale; the experience is solid but sits on a legacy Bootstrap/UIkit shell with the DS only skin-deep. Captured after rejecting non-essential cookies.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Homepage CTA &amp; contrast audit <span class="conf">deterministic</span></h3>
+      <table>
+        <thead><tr><th>CTA</th><th class="num">Size</th><th>Fill</th><th class="num">Contrast</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Talk to an Expert</td><td class="num">233×46</td><td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#147ac8;vertical-align:middle"></span> #147ac8 / #fff</td><td class="num"><b>4.52</b></td><td><span class="chip c-part">AA marginal</span></td></tr>
+          <tr><td>臺灣 (region)</td><td class="num">84×34</td><td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#db0025;vertical-align:middle"></span> #db0025 / #fff</td><td class="num"><b>4.53</b></td><td><span class="chip c-part">AA marginal</span></td></tr>
+          <tr><td>Hardware (text link)</td><td class="num">24px</td><td>#005a9e / #fff</td><td class="num">7.10</td><td><span class="chip c-mig">AAA</span></td></tr>
+          <tr><td>Read Case Study / Explore… / Learn More</td><td class="num">46h</td><td>#212121 / #fff pill</td><td class="num">16.10</td><td><span class="chip c-mig">AAA</span></td></tr>
+        </tbody>
+      </table>
+      <p class="legend">Both brand fills clear WCAG 1.4.3 AA (4.5) by ~0.02 — effectively on the line, and both fail AAA. Any rendering variance tips them to fail. <b>17 interactive targets &lt;44px</b> (WCAG 2.2 — 2.5.8 Target Size, AA).</p>
+    </div>
+    <div class="card">
+      <h3>Type scale (homepage) <span class="conf">deterministic</span></h3>
+      <table>
+        <thead><tr><th>Element</th><th class="num">Size</th><th class="num">Line-height</th><th class="num">Weight</th></tr></thead>
+        <tbody>
+          <tr><td>H1</td><td class="num">48px</td><td class="num">57.6</td><td class="num">700</td></tr>
+          <tr><td>H2</td><td class="num">32px</td><td class="num">44.8</td><td class="num">700</td></tr>
+          <tr><td>H3</td><td class="num">24px</td><td class="num">33.6</td><td class="num">700</td></tr>
+          <tr><td>P (first)</td><td class="num">18px</td><td class="num">24</td><td class="num" style="color:var(--red)"><b>700</b></td></tr>
+          <tr><td>A</td><td class="num">21px</td><td class="num">21</td><td class="num">700</td></tr>
+        </tbody>
+      </table>
+      <p class="legend">Scale is a clean ~1.5 progression. <b>Flag:</b> first paragraph renders at weight 700 — bold body copy flattens emphasis. Link line-height equals font size (21/21), which is tight. Verify base body style.</p>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <div class="finding" style="border-left-color:var(--amber)"><div class="top"><span class="t">CTA label proliferation &amp; repetition</span><span><span class="sev med">MED</span><span class="conf">heuristic</span></span></div><p>Homepage exposes 8 distinct CTAs including repeated "Explore…" and two "Learn More" labels. Generic verbs ("Learn More") give screen-reader and scanning users no destination cue, and compete with the single solid-blue primary ("Talk to an Expert"). Reserve the filled style for one primary action per view; make secondary labels specific ("Explore Business Monitors" is good, "Learn More" is not).</p></div>
+    <div class="finding" style="border-left-color:var(--blue)"><div class="top"><span class="t">Consent overlay is the first interactive layer</span><span><span class="sev low">LOW</span><span class="conf">heuristic</span></span></div><p>The cookie banner (.cky-*) gates the hero. Expected for GDPR, but confirm it doesn't trap keyboard focus and that a one-click privacy-preserving path exists (a reject control is present). It competes with the hero for the 2-second read.</p></div>
+  </div>
+  <div style="background:var(--blue-soft);border:1px solid #c5dbf6;border-radius:10px;padding:14px 16px;margin-top:14px">
+    <b style="font-size:13px">Priority recommendations</b>
+    <ol style="margin:8px 0 0;padding-left:20px;font-size:13px;color:var(--ink)">
+      <li style="margin-bottom:5px"><b>Fix the shared nav/footer link component</b> — clears axe <code>link-name</code> (serious) across the whole vertical in one change. Highest leverage, lowest effort.</li>
+      <li style="margin-bottom:5px"><b>Add a single H1 to every product hub</b> — orientation + SEO, confirmed by axe on every audited page.</li>
+      <li><b>Darken <code>--brand-blue</code> to clear AA with headroom, fix base paragraph weight, and reconcile the link blue</b> so the page actually uses the token — where the rollout and contrast findings meet.</li>
+    </ol>
+  </div>
+
+  <h2>Crawl inventory — pages visited</h2>
+  <p class="sub">Every URL discovered under <b>/global/business/</b> via the on-page navigation (sitemap.xml was empty). <b>Fingerprinted</b> = full style/token + SEO/structure extraction. <b>axe-core</b> = deterministic accessibility scan. Click any URL to open the live page.</p>
+  <div class="card" style="padding:6px 6px 2px">
+    <table id="crawlTbl">
+      <thead><tr><th class="num">#</th><th>URL</th><th>Section</th><th>Fingerprinted</th><th>axe-core</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="legend" id="crawlSummary"></p>
+
+  <div class="foot">
+    <b>Method & limitations</b>
+    <ul>
+      <li><b>Token signal:</b> counted CSS custom properties matching <code>--brand-*</code> in each page's accessible stylesheets, benchmarked against <code>product-a</code> (30 tokens) as the migrated reference. The shared Figma file is a cover page only, so exact hex/spacing token values could not be enumerated via MCP — token <i>presence and naming family</i> were verified, not every value.</li>
+      <li><b>Accessibility:</b> axe-core 4.10.2 was injected and run on 8 pages (5 lowest-completeness product pages + all 3 solutions pages), so those findings are <b>deterministic</b> with cited rule IDs. The other 8 sampled pages were not axe-scanned; their a11y signals remain heuristic. axe automated rules cannot catch everything (focus order, keyboard traps, meaningful alt text quality) — manual testing still required.</li>
+      <li><b>Performance:</b> no Lighthouse run. Page-weight signals (e.g. the 379-image LCD page) are observational from a single render, not Core Web Vitals.</li>
+      <li><b>Scope:</b> 16 pages sampled from 21 discoverable via the Business nav. The site sitemap.xml returned empty; a deeper crawl would surface product-detail and regional variants not covered here.</li>
+      <li><b>Rate limiting / infra:</b> earlier intermittent nginx 404s on the newer solutions pages were a reverse-proxy issue, now resolved — solutions-d and solutions-b2 have since been fully fingerprinted. axe on the three newer pages remains outstanding (CSP-blocked), not a data gap in the completeness scores.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const DATA = [
+  {p:'/global/business/',sec:'Home',title:'Company',generic:true,vs:9,h1:1,h2:10,desc:0,img:92,noalt:24},
+  {p:'/solutions/page-14',sec:'Solutions',title:'Company',generic:true,vs:9,h1:1,h2:11,desc:0,img:70,noalt:23},
+  {p:'/solutions/page-05',sec:'Solutions',title:'Company',generic:true,vs:9,h1:1,h2:8,desc:0,img:56,noalt:23},
+  {p:'/solutions/page-10',sec:'Solutions',title:'Company',generic:true,vs:9,h1:1,h2:13,desc:0,img:107,noalt:23},
+  {p:'/products/page-09/',sec:'Product hub',title:'Company',generic:true,vs:9,h1:0,h2:1,desc:0,img:85,noalt:24},
+  {p:'/products/page-22/',sec:'Product hub',title:'Company',generic:true,vs:9,h1:0,h2:1,desc:0,img:379,noalt:23},
+  {p:'/products/page-18/',sec:'Product hub',title:'Company',generic:true,vs:9,h1:0,h2:1,desc:0,img:143,noalt:24},
+  {p:'/products/page-17/',sec:'Product hub',title:'Company',generic:true,vs:9,h1:0,h2:1,desc:0,img:139,noalt:24},
+  {p:'/products/page-11/',sec:'Product hub',title:'Company',generic:true,vs:0,h1:0,h2:5,desc:0,img:63,noalt:16},
+  {p:'/products/page-19',sec:'Product detail',title:'Open Frame Touchscreens',generic:false,vs:30,h1:1,h2:16,desc:144,img:81,noalt:23},
+  {p:'/software/page-20',sec:'Software',title:'Company',generic:true,vs:9,h1:1,h2:7,desc:0,img:57,noalt:24},
+  {p:'/products/group-03/page-13',sec:'Product detail',title:'Company',generic:true,vs:0,h1:0,h2:4,desc:0,img:26,noalt:15},
+  {p:'/solutions/page-07',sec:'Solutions',title:'Company Global | Displays…',generic:false,vs:9,h1:1,h2:9,desc:129,img:49,noalt:23},
+  {p:'/solutions/page-08',sec:'Solutions',title:'Company Global | Displays…',generic:false,vs:9,h1:1,h2:8,desc:129,img:52,noalt:23},
+  {p:'/solutions/page-12',sec:'Solutions',title:'Company Global | Displays…',generic:false,vs:9,h1:1,h2:8,desc:129,img:65,noalt:24},
+  {p:'/products/page-16/',sec:'Product hub',title:'Company',generic:true,vs:9,h1:0,h2:1,desc:0,img:61,noalt:24},
+  {p:'/products/group-02/page-03',sec:'Product detail',title:'Company Cast (broadcast…)',generic:false,vs:9,h1:1,h2:13,desc:73,img:52,noalt:23},
+  {p:'/products/group-03/page-04/',sec:'Product hub',title:'Company',generic:true,vs:9,h1:0,h2:1,desc:0,img:39,noalt:23},
+];
+
+function tokenScore(v){ return v>=25?40 : v>=5?16 : 2; }
+function score(d){
+  const tk = tokenScore(d.vs);
+  const seo = (d.generic?0:12.5) + (d.desc>50?12.5:0);
+  const head = d.h1===1?15:0;
+  const alt = d.img>0 ? (1-d.noalt/d.img)*20 : 10;
+  return Math.round(tk+seo+head+alt);
+}
+function band(s){ return s>=80?['Fully migrated','c-mig'] : s>=60?['Near complete','c-near'] : s>=40?['Partial','c-part'] : ['Legacy','c-leg']; }
+function colorFor(s){ return s>=80?'#1d8a4e' : s>=60?'#7ec46f' : s>=40?'#e0a93b' : '#d05a4c'; }
+function issues(d){
+  const f=[];
+  if(d.vs===0) f.push(['No DS tokens','flag']);
+  else if(d.vs<25) f.push(['Body uses legacy tokens','flag warn']);
+  if(d.h1!==1) f.push([d.h1===0?'No H1':'Multiple H1','flag']);
+  if(d.generic) f.push(['Generic &lt;title&gt;','flag warn']);
+  if(d.desc<=50) f.push(['Thin/empty meta','flag warn']);
+  if(d.img>0 && d.noalt/d.img>0.15) f.push([d.noalt+' imgs no alt','flag']);
+  return f;
+}
+
+DATA.forEach(d=>{d.score=score(d);});
+
+// KPIs
+const n=DATA.length;
+const avg=Math.round(DATA.reduce((a,d)=>a+d.score,0)/n);
+const migrated=DATA.filter(d=>d.score>=80).length;
+const near=DATA.filter(d=>d.score>=60&&d.score<80).length;
+const legacy=DATA.filter(d=>d.score<40).length;
+const noH1=DATA.filter(d=>d.h1!==1).length;
+const genTitle=DATA.filter(d=>d.generic).length;
+const thinMeta=DATA.filter(d=>d.desc<=50).length;
+const totImg=DATA.reduce((a,d)=>a+d.img,0), totNoAlt=DATA.reduce((a,d)=>a+d.noalt,0);
+const altPct=Math.round(totNoAlt/totImg*100);
+
+const kpis=[
+  {n:avg+'%',l:'Avg rollout completeness',x:'Heuristic composite across 16 pages'},
+  {n:(migrated+near)+' / '+n,l:'Fully + near complete',x:'≥60% · '+migrated+' fully migrated, '+near+' near complete'},
+  {n:legacy+' / '+n,l:'Legacy / at-risk',x:'<40% completeness'},
+  {n:noH1+' / '+n,l:'Missing a single H1',x:'WCAG 1.3.1 / 2.4.6 concern · heuristic'},
+  {n:genTitle+' / '+n,l:'Generic “Company” title',x:'SEO + a11y page-title hygiene'},
+  {n:altPct+'%',l:'Sampled images missing alt',x:totNoAlt+' of '+totImg+' · WCAG 1.1.1 · heuristic'},
+];
+document.getElementById('kpis').innerHTML=kpis.map(k=>`<div class="kpi"><div class="n">${k.n}</div><div class="l">${k.l}</div><div class="x">${k.x}</div></div>`).join('');
+
+// table
+function renderTable(rows){
+  const tb=document.querySelector('#tbl tbody');
+  tb.innerHTML=rows.map(d=>{
+    const [bn,bc]=band(d.score);
+    const col = colorFor(d.score);
+    const fl=issues(d).map(f=>`<span class="${f[1]}">${f[0]}</span>`).join('');
+    return `<tr>
+      <td><span class="path">${d.p}</span></td>
+      <td class="num"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><span style="font-weight:700;min-width:30px">${d.score}%</span><span class="bar"><i style="width:${d.score}%;background:${col}"></i></span></div></td>
+      <td><span class="chip ${bc}">${bn}</span></td>
+      <td class="num">${d.vs}</td>
+      <td>${fl}</td>
+    </tr>`;
+  }).join('');
+}
+let sortAsc=true, sortKey='score';
+function sortRows(k){
+  if(k===sortKey) sortAsc=!sortAsc; else {sortKey=k; sortAsc = k==='score'?true:true;}
+  const r=[...DATA].sort((a,b)=>{
+    let x=a[k],y=b[k];
+    if(k==='band'){x=a.score;y=b.score;}
+    if(k==='issues'){x=issues(a).length;y=issues(b).length;}
+    if(typeof x==='string'){return sortAsc?x.localeCompare(y):y.localeCompare(x);}
+    return sortAsc?x-y:y-x;
+  });
+  renderTable(r);
+}
+document.querySelectorAll('#tbl th').forEach(th=>th.addEventListener('click',()=>sortRows(th.dataset.k)));
+renderTable([...DATA].sort((a,b)=>a.score-b.score)); // worst first
+
+// Respect prefers-reduced-motion: disable Chart.js load animations.
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){ Chart.defaults.animation=false; }
+
+// bar chart
+const sorted=[...DATA].sort((a,b)=>a.score-b.score);
+new Chart(document.getElementById('barChart'),{
+  type:'bar',
+  data:{labels:sorted.map(d=>d.p==='/global/business/'?'Business homepage':d.p),
+    datasets:[{data:sorted.map(d=>d.score),
+      backgroundColor:sorted.map(d=>colorFor(d.score)),
+      borderRadius:4,barThickness:13}]},
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x+'% complete'}}},
+    scales:{x:{max:100,grid:{color:'#eef1f6'},ticks:{callback:v=>v+'%',font:{size:10}}},
+      y:{grid:{display:false},ticks:{font:{size:9.5}}}}}
+});
+
+// tier doughnut
+const bMig=DATA.filter(d=>d.score>=80).length, bNear=DATA.filter(d=>d.score>=60&&d.score<80).length, bPart=DATA.filter(d=>d.score>=40&&d.score<60).length, bLeg=DATA.filter(d=>d.score<40).length;
+new Chart(document.getElementById('tierChart'),{
+  type:'doughnut',
+  data:{labels:['Fully migrated (≥80)','Near complete (60–79)','Partial (40–59)','Legacy (<40)'],
+    datasets:[{data:[bMig,bNear,bPart,bLeg],backgroundColor:['#1d8a4e','#7ec46f','#e0a93b','#d05a4c'],borderWidth:2,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'52%',
+    plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:8}},
+      tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+' page'+(c.parsed===1?'':'s')}}}}
+});
+
+// axe-core 4.10.2 per-page results — 5 worst product pages + all 3 solutions pages
+const AXE=[
+  {p:'/products/group-03/page-13',sec:'Product',total:6,serious:'link-name ×1 · link-in-text-block ×2',head:'no H1 · order ×1',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/products/page-11/',sec:'Product',total:6,serious:'link-name ×1',head:'no H1 · order ×1 · empty ×2',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/products/group-03/page-04/',sec:'Product',total:4,serious:'link-name ×1',head:'no H1',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/products/page-16/',sec:'Product',total:5,serious:'link-name ×1',head:'no H1 · order ×1',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/products/page-09/',sec:'Product',total:6,serious:'link-name ×1',head:'no H1 · order ×1 · empty ×2',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/solutions/page-14',sec:'Solutions',total:5,serious:'link-name ×1 · aria-prohibited-attr ×1',head:'order ×3',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/solutions/page-05',sec:'Solutions',total:4,serious:'link-name ×3',head:'order ×5',lm:'region ×2 · landmark-unique ×1'},
+  {p:'/solutions/page-10',sec:'Solutions',total:9,serious:'link-name ×3',head:'order ×9 · redundant-alt ×5',lm:'region ×2 · dup banner+main · landmark-unique ×2'},
+];
+(function(){
+  const tb=document.querySelector('#axeTbl tbody');
+  const render=rows=>{tb.innerHTML=rows.map(r=>{
+    const tc=r.total>=7?'var(--red)':r.total>=5?'var(--amber)':'var(--green)';
+    const secc=r.sec==='Solutions'?'c-part':'';
+    return `<tr>
+      <td><span class="path">${r.p}</span></td>
+      <td>${secc?`<span class="chip ${secc}">${r.sec}</span>`:r.sec}</td>
+      <td class="num"><b style="color:${tc}">${r.total}</b></td>
+      <td style="color:var(--red);font-size:11.5px">${r.serious}</td>
+      <td style="font-size:11.5px">${r.head}</td>
+      <td style="font-size:11.5px;color:var(--muted)">${r.lm}</td>
+    </tr>`;}).join('');};
+  render([...AXE].sort((a,b)=>b.total-a.total));
+  let asc={};
+  document.querySelectorAll('#axeTbl th[data-k]').forEach(th=>th.addEventListener('click',()=>{
+    const k=th.dataset.k;asc[k]=!asc[k];
+    render([...AXE].sort((a,b)=>{let x=a[k],y=b[k];return typeof x==='string'?(asc[k]?x.localeCompare(y):y.localeCompare(x)):(asc[k]?x-y:y-x);}));
+  }));
+})();
+
+// crawl inventory — all URLs discovered under /global/business/
+const ORIGIN='https://www.example-corp.com';
+const CRAWL=[
+  {u:'/global/business/',sec:'Home',fp:1,ax:0},
+  {u:'/global/business/group-05/page-14',sec:'Solutions',fp:1,ax:1},
+  {u:'/global/business/group-05/page-05',sec:'Solutions',fp:1,ax:1},
+  {u:'/global/business/group-05/page-10',sec:'Solutions',fp:1,ax:1},
+  {u:'/global/business/group-01/page-09/',sec:'Product hub',fp:1,ax:1},
+  {u:'/global/business/group-01/group-02/page-03',sec:'Product detail',fp:1,ax:0},
+  {u:'/global/business/group-01/group-02/page-01',sec:'Product detail',fp:0,ax:0},
+  {u:'/global/business/group-01/page-22/',sec:'Product hub',fp:1,ax:0},
+  {u:'/global/business/group-01/group-03/page-13',sec:'Product detail',fp:1,ax:1},
+  {u:'/global/business/group-01/group-03/page-04/',sec:'Product hub',fp:1,ax:1},
+  {u:'/global/business/group-01/group-03/page-02',sec:'Product detail',fp:0,ax:0},
+  {u:'/global/business/group-01/group-03/page-06',sec:'Product detail',fp:0,ax:0},
+  {u:'/global/business/group-01/page-18/',sec:'Product hub',fp:1,ax:0},
+  {u:'/global/business/group-01/group-04/page-04/',sec:'Product hub',fp:0,ax:0},
+  {u:'/global/business/group-01/page-17/',sec:'Product hub',fp:1,ax:0},
+  {u:'/global/business/group-01/page-11/',sec:'Product hub',fp:1,ax:1},
+  {u:'/global/business/group-01/page-19',sec:'Product detail',fp:1,ax:0},
+  {u:'/global/business/group-01/page-16/',sec:'Product hub',fp:1,ax:1},
+  {u:'/global/business/group-05/page-07',sec:'Solutions',fp:1,ax:0,tag:'newer template'},
+  {u:'/global/business/group-05/page-08',sec:'Solutions',fp:1,ax:0,tag:'newer template'},
+  {u:'/global/business/group-05/page-12',sec:'Solutions',fp:1,ax:0,tag:'newer template'},
+  {u:'/global/business/group-06/page-20',sec:'Software',fp:1,ax:0},
+];
+(function(){
+  const yes='<span class="chip c-mig">yes</span>', no='<span style="color:#c3cbd8">—</span>';
+  const statusChip=s=> s==='404' ? '<span class="chip c-leg">404 (infra / proxy?)</span>' : s==='pending' ? '<span class="chip c-part">scan pending</span>' : '';
+  document.querySelector('#crawlTbl tbody').innerHTML=CRAWL.map((r,i)=>`<tr${r.status==='404'?' style="opacity:.6"':''}>
+    <td class="num" style="color:var(--muted)">${i+1}</td>
+    <td><a class="path" href="${ORIGIN}${encodeURI(r.u)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">${r.u}</a>${r.tag?` <span style="font-size:10px;color:var(--blue);background:var(--blue-soft);border-radius:5px;padding:1px 5px">${r.tag}</span>`:''}${r.status?' '+statusChip(r.status):''}</td>
+    <td style="font-size:11.5px;color:var(--muted)">${r.sec}</td>
+    <td>${r.fp?yes:no}</td>
+    <td>${r.ax?yes:no}</td>
+  </tr>`).join('');
+  const fp=CRAWL.filter(r=>r.fp).length, ax=CRAWL.filter(r=>r.ax).length, live=CRAWL.filter(r=>r.status!=='404').length;
+  document.getElementById('crawlSummary').innerHTML=`<b>${live}</b> reachable URLs (of ${CRAWL.length} checked) · <b>${fp}</b> fingerprinted · <b>${ax}</b> axe-audited. Re-run confirmed the earlier nginx 404s on <b>solutions-d</b> and <b>solutions-b2</b> were the <b>reverse-proxy issue (now resolved)</b> — both are live and fully fingerprinted (Near complete, ~67–69%). The three newer solutions pages (solutions-a2, solutions-d, solutions-b2) block external script injection via a stricter CSP, so axe could not run on them. Note: <b>/solutions/page-07</b> (plural) is a distinct, newer page from <b>/solutions/page-10</b> (singular).`;
+})();
+
+// findings
+const findings=[
+  {t:'Design system has effectively not reached the Business site body',sev:'high',conf:'deterministic',
+   d:'15 of 16 sampled pages carry at most the 9 shared <code>--brand-blue*</code> chrome tokens; only <code>product-a</code> shows page-level DS adoption (30 tokens). The site still renders on Bootstrap + UIkit + FontAwesome variable sets. The DS semantic token namespace from Figma (<code>ds/sys/*</code>) is absent everywhere sampled.',
+   ev:'Evidence: --brand-* token counts per page; --uk-*/Bootstrap vars present on all 16.'},
+  {t:'Links with no discernible text on every page audited',sev:'high',conf:'deterministic',
+   d:'axe-core flags <code>link-name</code> (serious) on <b>all 8 audited pages — 5 product + all 3 solutions</b> — links a screen reader announces as just "link". WCAG 2.2 — 2.4.4 Link Purpose and 4.1.2 Name, Role, Value. <code>product-b</code> also fails <code>link-in-text-block</code> (1.4.1) and <code>solutions-b</code> fails <code>aria-prohibited-attr</code> (4.1.2). The link-name failure on every page is strong evidence of a shared nav/footer component — one fix propagates sitewide.',
+   ev:'axe-core 4.10.2 "link-name": ×1 product-b, dvled, accessories, product-e, product-d, solutions-b; ×3 solutions-c, solutions-a.'},
+  {t:'Product category hubs are missing a top-level H1',sev:'high',conf:'deterministic',
+   d:'product-d, lcd, product-i, product-h, product-e, accessories, product-c and product-b render with zero <code>&lt;h1&gt;</code>, jumping straight to H2. Breaks document outline for screen-reader users and weakens SEO. axe confirms <code>page-has-heading-one</code> on every audited page; related WCAG 2.2 — 1.3.1 and 2.4.6.',
+   ev:'DOM h1 count = 0 on 9/16 pages; axe "page-has-heading-one" on all 5 product pages. Solutions pages have an H1 but fail "heading-order" (up to ×9 on solutions-a).'},
+  {t:'A newer solutions template is rolling out alongside the old — with duplicate URLs',sev:'high',conf:'deterministic',
+   d:'There are now two parallel sets of solutions pages. The <b>older set</b> (solutions-a, solutions-b, solutions-c) scores Partial (43–47%): generic "Company" titles, no meta. The <b>newer set</b> (solutions-a2, solutions-d, solutions-b2) scores Near complete (67–69%): proper H1s, meta descriptions, and a stricter CSP. At least one pair is a near-duplicate of the same concept — <code>/solutions/page-10</code> (old) vs <code>/solutions/page-07</code> (new), and arguably <code>solutions-b</code> vs <code>solutions-b2</code>. Two live URLs per concept splits SEO equity, confuses analytics, and risks users landing on the stale version. Pick canonical URLs, 301 the retired ones, and make sure nav links only the survivors.',
+   ev:'Old set: title "Company", desc 0. New set: corporate boilerplate title, desc 129, real H1s (Personal Workspaces / Better Communication Across Your Campus / Meeting Spaces), scores 67–69. Earlier 404s on the new set were a reverse-proxy issue, now resolved.'},
+  {t:'solutions-a has duplicate landmarks and broken heading order',sev:'med',conf:'deterministic',
+   d:'The solutions-a solutions page ships <b>two top-level <code>banner</code> and two <code>main</code> landmarks</b> (axe <code>landmark-no-duplicate-banner/main</code>, <code>landmark-*-is-top-level</code>) and fails <code>heading-order</code> across 9 nodes. Duplicate landmarks confuse screen-reader region navigation; the other two solutions pages fail heading-order too (×3, ×5). Likely a template assembling two header/main blocks — a structural fix, not a token one.',
+   ev:'axe-core 4.10.2 on /solutions/page-10: 9 violations incl. dup banner+main, landmark-unique ×2, heading-order ×9.'},
+  {t:'Generic page titles and empty meta descriptions sitewide',sev:'med',conf:'deterministic',
+   d:'Most sampled pages ship <code>&lt;title&gt;Company&lt;/title&gt;</code> with no meta description. Only a handful (product-a, Cast, solutions-a2) carry real titles + descriptions — the pages furthest along on DS adoption, suggesting title/meta is part of the migration template. Note the newer pages use a shared corporate boilerplate title ("Company Global | Displays, Monitors…") rather than a page-specific one, so this is a partial win, not a full fix.',
+   ev:'Evidence: document.title and meta[name=description] length per page.'},
+  {t:'Missing alt attributes are mostly decorative — not a failure',sev:'low',conf:'deterministic',
+   d:'336 of 1,450 sampled images expose no <code>alt</code> attribute, but axe-core found <b>zero</b> <code>image-alt</code> violations on the 5 audited pages — meaning those images are decorative, CSS-driven, or otherwise labelled. The earlier 23% figure overstated risk; this is now a hygiene item (add explicit <code>alt=""</code> to decorative images), not a WCAG 1.1.1 failure. Still worth confirming on the image-heavy LCD page (379 images), which was not in the axe set.',
+   ev:'DOM: 336/1450 img without [alt]. axe-core "image-alt": 0 violations across 5 audited pages.'},
+  {t:'Two product pages are fully off-system',sev:'med',conf:'deterministic',
+   d:'product-c and lcd/product-b show <b>zero</b> DS tokens — below even the global-chrome baseline the other pages share. They are the strongest candidates for an older template or a different rendering path. Lowest completeness in the sample.',
+   ev:'Evidence: --brand-* count = 0; both also missing H1 and meta.'},
+];
+// relevant page(s) to investigate per finding, in findings order
+const FPAGES=[
+  [['/global/business/','Business homepage'],['/global/business/group-01/page-19','Open Frame (reference)']],
+  [['/global/business/group-05/page-05','solutions-c']],
+  [['/global/business/group-01/page-09/','product-d'],['/global/business/group-01/page-22/','lcd']],
+  [['/global/business/group-05/page-10','old: solutions-a'],['/global/business/group-05/page-07','new: solutions-a2'],['/global/business/group-05/page-14','old: solutions-b'],['/global/business/group-05/page-12','new: solutions-b2']],
+  [['/global/business/group-05/page-10','solutions-a']],
+  [['/global/business/group-01/page-22/','lcd'],['/global/business/','homepage']],
+  [['/global/business/group-01/page-22/','lcd (379 images)']],
+  [['/global/business/group-01/page-11/','product-c'],['/global/business/group-01/group-03/page-13','product-b']],
+];
+findings.forEach((f,i)=>{f.pages=FPAGES[i]||[]});
+document.getElementById('findings').innerHTML=findings.map(f=>`
+  <div class="finding" style="border-left-color:${f.sev==='high'?'var(--red)':f.sev==='med'?'var(--amber)':'var(--blue)'}">
+    <div class="top"><span class="t">${f.t}</span><span><span class="sev ${f.sev}">${f.sev.toUpperCase()}</span><span class="conf">${f.conf}</span></span></div>
+    <p>${f.d}</p>
+    <p class="evidence">${f.ev}</p>
+    ${f.pages.length?`<div>${f.pages.map(p=>`<a class="pglink" href="${ORIGIN}${encodeURI(p[0])}" target="_blank" rel="noopener">↗ Investigate: ${p[1]}</a>`).join('')}</div>`:''}
+  </div>`).join('');
+</script>
+</body>
+</html>

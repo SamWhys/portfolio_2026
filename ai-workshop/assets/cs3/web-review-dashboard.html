@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>/global Web Review — Aggregate Snapshot (Business + Education)</title>
+<style>
+  :root{
+    color-scheme: light; /* presentation-safe fork: pin LIGHT for a predictable projector theme */
+    --bg:#ffffff; --ink:#1a1d21; --muted:#494f57; --surface:#f4f6f8; --surface2:#e9edf2;
+    --line:#ccd2da; --brand:#8a0000; --link:#0b4fce;
+    --hi-ink:#7a1800; --hi-bg:#fbe4db; --hi-line:#e0997f;
+    --me-ink:#5c4300; --me-bg:#faeec2; --me-line:#dabf5f;
+    --lo-ink:#134527; --lo-bg:#dcefe3; --lo-line:#93cba7;
+    --in-ink:#1d315c; --in-bg:#e3ebff; --in-line:#9fb8ef;
+    --na-ink:#363b43; --na-bg:#e7eaee; --na-line:#bfc5ce;
+    --crit-ink:#5a0d2e; --crit-bg:#f7dce8; --crit-line:#d68fb0;
+  }
+  /* Dark-mode override removed — this fork stays LIGHT regardless of OS theme (projector-stable). */
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .skip{position:absolute;left:-999px;top:0;background:var(--ink);color:var(--bg);padding:.6rem 1rem;z-index:50}
+  .skip:focus{left:8px;top:8px}
+  a{color:var(--link)}
+  a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+  .wrap{max-width:1120px;margin:0 auto;padding:1.25rem}
+  header.site{border-bottom:3px solid var(--brand);padding-bottom:1rem}
+  h1{font-size:1.6rem;margin:.2rem 0 .4rem;line-height:1.2}
+  h2{font-size:1.25rem;margin:2.2rem 0 .6rem;border-left:5px solid var(--brand);padding-left:.6rem}
+  h3{font-size:1.02rem;margin:1.1rem 0 .3rem}
+  p{margin:.5rem 0}
+  .meta{display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-size:.85rem;color:var(--muted);margin:.4rem 0}
+  .meta b{color:var(--ink)}
+  .banner{border:2px solid var(--me-line);background:var(--me-bg);color:var(--me-ink);padding:.7rem .9rem;border-radius:8px;margin:.9rem 0;font-size:.92rem}
+  nav.toc{margin:1rem 0;font-size:.9rem}
+  nav.toc a{display:inline-block;margin:.15rem .5rem .15rem 0;padding:.2rem .5rem;background:var(--surface);border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--ink)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:.8rem;margin:.8rem 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.85rem .9rem}
+  .card .n{font-size:1.7rem;font-weight:700;line-height:1.1}
+  .card .lab{font-size:.82rem;color:var(--muted);margin-top:.15rem}
+  .tag{display:inline-block;font-size:.72rem;font-weight:700;padding:.12rem .45rem;border-radius:999px;border:1px solid;white-space:nowrap}
+  .t-measured{color:var(--lo-ink);background:var(--lo-bg);border-color:var(--lo-line)}
+  .t-assessed{color:var(--in-ink);background:var(--in-bg);border-color:var(--in-line)}
+  .t-na{color:var(--na-ink);background:var(--na-bg);border-color:var(--na-line)}
+  .sev{display:inline-block;font-size:.72rem;font-weight:700;padding:.12rem .45rem;border-radius:6px;border:1px solid}
+  .s-crit{color:var(--crit-ink);background:var(--crit-bg);border-color:var(--crit-line)}
+  .s-high{color:var(--hi-ink);background:var(--hi-bg);border-color:var(--hi-line)}
+  .s-med{color:var(--me-ink);background:var(--me-bg);border-color:var(--me-line)}
+  .s-low{color:var(--lo-ink);background:var(--lo-bg);border-color:var(--lo-line)}
+  .s-info{color:var(--in-ink);background:var(--in-bg);border-color:var(--in-line)}
+  details.f{border:1px solid var(--line);border-radius:9px;margin:.55rem 0;background:var(--bg)}
+  details.f>summary{cursor:pointer;padding:.7rem .85rem;list-style:none;display:flex;gap:.5rem;align-items:flex-start;flex-wrap:wrap}
+  details.f>summary::-webkit-details-marker{display:none}
+  details.f>summary::before{content:"\25B8";color:var(--muted);font-weight:700;margin-right:.2rem}
+  details.f[open]>summary::before{content:"\25BE"}
+  summary .ttl{font-weight:650;flex:1 1 60%;min-width:220px}
+  .f .body{padding:0 .9rem .85rem}
+  .f .body dl{display:grid;grid-template-columns:max-content 1fr;gap:.2rem .8rem;margin:.6rem 0 0;font-size:.92rem}
+  .f .body dt{font-weight:700;color:var(--muted)}
+  .f .body code{background:var(--surface2);padding:.05rem .3rem;border-radius:4px;font-size:.85em}
+  table{border-collapse:collapse;width:100%;font-size:.8rem;margin:.6rem 0;overflow-x:auto;display:block}
+  caption{text-align:left;font-size:.85rem;color:var(--muted);margin-bottom:.3rem}
+  th,td{border:1px solid var(--line);padding:.35rem .45rem;text-align:right;white-space:nowrap}
+  th[scope=row],td.l{text-align:left}
+  thead th{background:var(--surface2);position:sticky;top:0}
+  tbody tr:nth-child(even){background:var(--surface)}
+  .legend{font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.5rem 1rem;margin:.4rem 0}
+  footer{margin-top:2.5rem;border-top:1px solid var(--line);padding-top:1rem;font-size:.85rem;color:var(--muted)}
+  ul{margin:.4rem 0 .4rem 1.1rem;padding:0}
+  li{margin:.25rem 0}
+  .hint{font-size:.8rem;color:var(--muted)}
+  mark{background:var(--me-bg);color:var(--me-ink);padding:0 .2rem;border-radius:3px}
+</style>
+
+  <style>
+    /* ===== Portfolio site chrome ==========================================
+       Lets a reader navigate back to the main site instead of dead-ending in
+       the artefact. Deliberately uses SYSTEM fonts and no network requests:
+       this deck's whole point is that it runs offline from a filesystem with
+       no CDN, and the chrome must not be what breaks that. Night palette,
+       matching the portfolio, so it reads as site furniture framing a light
+       document rather than part of the deck. */
+    .site-chrome{--c-night:#101229;--c-paper:#faf8f4;--c-dim:#cdd3f2;--c-accent:#9db2ff;
+      background:var(--c-night);color:var(--c-dim);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      font-size:15px;line-height:1.5}
+    .site-chrome a{color:var(--c-dim);text-decoration:none}
+    .site-chrome a:hover,.site-chrome a:focus-visible{color:var(--c-paper)}
+    .site-chrome a:focus-visible{outline:3px solid var(--c-accent);outline-offset:3px;border-radius:3px}
+    .sc-inner{max-width:1100px;margin:0 auto;padding:14px 24px;
+      display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .sc-mast{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--c-paper)}
+    .sc-nav{display:flex;gap:22px;list-style:none;margin:0;padding:0;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+    .sc-foot .sc-inner{align-items:flex-start;padding:26px 24px 30px}
+    .sc-back{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+    .sc-note{margin:8px 0 0;max-width:62ch;font-size:13px;color:#8f97c4}
+    @media (max-width:640px){.sc-inner{padding:12px 16px}.sc-nav{gap:14px}}
+  </style>
+</head>
+<body>
+
+<div class="site-chrome"><div class="sc-inner">
+  <a class="sc-mast" href="/portfolio_2026/">Sam Perniskie</a>
+  <a class="sc-back" href="/portfolio_2026/ai-workshop/index.html">&larr; Back to the talk</a>
+</div></div>
+
+<a class="skip" href="#main">Skip to main content</a>
+<div class="wrap">
+<header class="site">
+  <p class="hint">Web Design Operations — aggregate snapshot</p>
+  <h1>/global Web Review: Business + Education (sampled aggregate)</h1>
+  <div class="meta" role="group" aria-label="Snapshot metadata">
+    <span><b>Snapshot:</b> 2026-06-09 ~09:50 UTC</span>
+    <span><b>Mode:</b> aggregate, stratified sample</span>
+    <span><b>Scope:</b> <code class="pathref">/global</code> (+ <code class="pathref">/education</code>) only — <mark>/region excluded</mark></span>
+    <span><b>URL set:</b> 10 pages (5 Business, 5 Education)</span>
+    <span><b>Design systems:</b> Business <code>WRRYecTEWEhB1NoRZrMLfZ</code> · Education <code>edPt1UCGl7uNhARU8oHRUp</code></span>
+    <span><b>Tooling:</b> axe-core 4.10.2 <span class="tag t-measured">live</span> · render observations <span class="tag t-measured">live</span> · PSI <span class="tag t-na">unavailable</span> · Figma token values <span class="tag t-na">unresolved</span></span>
+  </div>
+  <div class="banner" role="note">
+    <strong>Partial snapshot, and a scope note.</strong> This run covers the <code class="pathref">/global</code> site (a Bootstrap/UIkit build, distinct from the <code class="pathref">/region</code> Magento store, which is excluded). <b>Performance</b> figures are <em>render-observed</em> (browser network panel) and are <em>not Lighthouse scores or Core Web Vitals</em> — PSI was unreachable. <b>Design-system token drift</b> against Figma is <em>not measured</em>: the linked files expose token names but not resolved values via available tooling. No numbers were estimated to fill these gaps.
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#a11y-demo">A11y, live</a>
+    <a href="#score">Scorecard</a>
+    <a href="#a11y-auto">A11y (automated)</a>
+    <a href="#a11y-heur">A11y (heuristic)</a>
+    <a href="#perf">Performance</a>
+    <a href="#ds-token">DS token drift</a>
+    <a href="#ds-comp">DS component parity</a>
+    <a href="#content">Content / IA</a>
+    <a href="#cro">CRO / UX</a>
+    <a href="#data">Per-page data</a>
+    <a href="#method">Method &amp; limits</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ===== Accessibility demo (added for the UX talk): live WCAG 2.2 examples =====
+     Real design-system values (from Figma): primary button fill #db0025
+     (white text = 5.2:1, passes AA); focus ring #cfe9f7; focus demo overlays the real
+     homepage (assets/cs3/site-homepage.jpg, node 16215:11853). -->
+<style>
+  .a11yx-lead{max-width:74ch}
+  .a11yx-card{margin:0 0 .9rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1rem 1.05rem}
+  .a11yx-cap{font-weight:700;font-size:.95rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin:0 0 .85rem}
+  .a11yx-ref{font-size:.68rem;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:.12rem .5rem;white-space:nowrap}
+  .a11yx-note{font-size:.82rem;color:var(--muted);margin:.85rem 0 0}
+  .a11yx-contrast{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;min-height:60px}
+  /* Real primary button: pill, white bold label. Starts on a failing grey. */
+  .a11yx-btn{border:none;border-radius:999px;padding:.72rem 1.6rem;font-size:1rem;font-weight:700;color:#fff;background:#cfcfcf;cursor:default;text-align:center;transition:background-color .18s ease}
+  .a11yx-meter{display:flex;flex-direction:column;gap:.3rem;font-variant-numeric:tabular-nums}
+  .a11yx-ratio{font-size:1.55rem;font-weight:800;line-height:1}
+  .a11yx-badge{font-size:.76rem;font-weight:800;padding:.16rem .5rem;border-radius:6px;border:1px solid;align-self:flex-start}
+  .a11yx-badge.pass{color:var(--lo-ink);background:var(--lo-bg);border-color:var(--lo-line)}
+  .a11yx-badge.fail{color:var(--crit-ink);background:var(--crit-bg);border-color:var(--crit-line)}
+  .a11yx-token{font-size:.72rem;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--muted)}
+  /* Focus demo overlaid on the real homepage. */
+  .a11yx-page{position:relative;max-width:840px;margin:.1rem 0 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .a11yx-page img{display:block;width:100%;height:auto}
+  /* Real design-system focus ring: light-blue #cfe9f7, ~4px. Soft shadow lifts it off the busy page. */
+  .a11yx-ring{position:absolute;box-sizing:border-box;border:4px solid #cfe9f7;border-radius:8px;pointer-events:none;opacity:0;filter:drop-shadow(0 0 2px rgba(3,44,90,.5));transition:left .45s cubic-bezier(.4,0,.2,1),top .45s cubic-bezier(.4,0,.2,1),width .45s cubic-bezier(.4,0,.2,1),height .45s cubic-bezier(.4,0,.2,1),border-radius .45s}
+  .a11yx-key{display:inline-block;font-size:.72rem;font-weight:800;font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--ink);color:var(--bg);border-radius:5px;padding:.12rem .45rem;transition:transform .1s ease}
+  .a11yx-key.press{transform:translateY(2px) scale(.93)}
+  @media (prefers-reduced-motion:reduce){ .a11yx-btn{transition:none} .a11yx-ring{transition:none} .a11yx-key{transition:none} }
+  .a11yx-explain{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:.2rem 0 1.1rem}
+  @media (max-width:720px){.a11yx-explain{grid-template-columns:1fr}}
+  .a11yx-def{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem}
+  .a11yx-def h3{margin:0 0 .35rem;font-size:.95rem}
+  .a11yx-def p{margin:0;font-size:.9rem;color:var(--muted);line-height:1.55}
+</style>
+<section id="a11y-demo" aria-labelledby="a11y-demo-h" class="a11yx">
+  <h2 id="a11y-demo-h">Accessibility, demonstrated</h2>
+  <div class="a11yx-explain">
+    <div class="a11yx-def">
+      <h3>What is accessibility?</h3>
+      <p>Building the site so everyone can use it, including people with disabilities: those who are blind or low-vision, deaf or hard of hearing, or who navigate by keyboard rather than a mouse. In practice that means things like readable colour contrast, text descriptions for images, and controls that work without a mouse. Done well, it makes the site easier for everyone.</p>
+    </div>
+    <div class="a11yx-def">
+      <h3>The European Accessibility Act (EAA)</h3>
+      <p>A new EU law, in force since June 2025, that makes digital accessibility a legal requirement for many products and services offered in the EU, websites and online stores included. It sets one common standard across EU countries, and organisations that fall short can face complaints and fines. In short: accessibility is no longer just good practice, it is the law.</p>
+    </div>
+  </div>
+  <p class="a11yx-lead">Two <b>WCAG 2.2 AA</b> checks behind this review, shown with the real design system: the primary button's colour contrast, and a keyboard focus state on the live homepage.</p>
+  <figure class="a11yx-card">
+    <figcaption class="a11yx-cap"><span>Colour contrast</span> <span class="a11yx-ref">WCAG 1.4.3</span></figcaption>
+    <div class="a11yx-contrast">
+      <button type="button" class="a11yx-btn" id="a11yx-cbtn" tabindex="-1" aria-hidden="true">Talk to an Expert</button>
+      <div class="a11yx-meter" aria-hidden="true">
+        <span class="a11yx-ratio" id="a11yx-ratio">1.6:1</span>
+        <span class="a11yx-badge fail" id="a11yx-badge">Fail &#10007;</span>
+        <span class="a11yx-token" id="a11yx-token">Low-contrast grey &middot; #cfcfcf</span>
+      </div>
+    </div>
+    <p class="a11yx-note">A washed-out grey button (~1.6:1) is unreadable and fails AA outright. Switch to the real button red <b>#db0025</b> and it jumps to <b>5.2:1</b>, comfortably clear of the 4.5 line.</p>
+  </figure>
+  <figure class="a11yx-card">
+    <figcaption class="a11yx-cap"><span>Keyboard focus &mdash; on the real homepage</span> <span class="a11yx-ref">WCAG 2.4.7 / 2.4.11</span></figcaption>
+    <div class="a11yx-page" aria-hidden="true">
+      <img src="site-homepage.jpg" alt="">
+      <div class="a11yx-ring" id="a11yx-ring"></div>
+    </div>
+    <p class="a11yx-note"><span class="a11yx-key" id="a11yx-key">Tab &#8677;</span> steps through the header and hero, and the design system's real focus ring (light-blue <b>#cfe9f7</b>) tracks each control: the Hardware / Software / Resources menus, search, and the two calls to action.</p>
+  </figure>
+</section>
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function lum(r,g,b){var a=[r,g,b].map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2];}
+  function ratio(c1,c2){var L1=lum(c1[0],c1[1],c1[2]),L2=lum(c2[0],c2[1],c2[2]),hi=Math.max(L1,L2),lo=Math.min(L1,L2);return (hi+0.05)/(lo+0.05);}
+  var white=[255,255,255];
+  var cbtn=document.getElementById('a11yx-cbtn'),ratioEl=document.getElementById('a11yx-ratio'),badgeEl=document.getElementById('a11yx-badge'),tokEl=document.getElementById('a11yx-token');
+  // Start on an obviously non-compliant grey, then switch to the real brand red.
+  var states=[{bg:[207,207,207],tok:'Low-contrast grey · #cfcfcf'},{bg:[219,0,37],tok:'Primary button · #db0025'}];
+  function apply(s){
+    if(cbtn) cbtn.style.background='rgb('+s.bg[0]+','+s.bg[1]+','+s.bg[2]+')';
+    var cr=ratio(s.bg,white),pass=cr>=4.5;
+    if(ratioEl) ratioEl.textContent=cr.toFixed(1)+':1';
+    if(badgeEl){badgeEl.textContent=(cr>=7?'AAA ✓':pass?'AA ✓':'Fail ✗');badgeEl.className='a11yx-badge '+(pass?'pass':'fail');}
+    if(tokEl) tokEl.textContent=s.tok;
+  }
+  if(cbtn){
+    apply(states[0]);
+    if(reduce){ apply(states[1]); }
+    else { var si=0; setInterval(function(){ si=(si+1)%states.length; apply(states[si]); },2600); }
+  }
+  // Focus ring tab-stops as % boxes over the homepage image {l,t,w,h,r}.
+  var ring=document.getElementById('a11yx-ring'),keyEl=document.getElementById('a11yx-key');
+  var stops=[
+    {l:24.3,t:9.3,w:6.4,h:4.0,r:'8px'},   /* Hardware */
+    {l:30.8,t:9.3,w:5.9,h:4.0,r:'8px'},   /* Software */
+    {l:36.8,t:9.3,w:6.6,h:4.0,r:'8px'},   /* Resources */
+    {l:69.7,t:9.0,w:3.0,h:4.6,r:'50%'},   /* Search */
+    {l:72.9,t:8.8,w:12.2,h:5.0,r:'999px'},/* Talk to an Expert */
+    {l:11.3,t:49.2,w:15.4,h:5.8,r:'999px'}/* Download Whitepaper */
+  ];
+  if(ring){
+    var i=0;
+    function place(s){ ring.style.opacity='1'; ring.style.left=s.l+'%'; ring.style.top=s.t+'%'; ring.style.width=s.w+'%'; ring.style.height=s.h+'%'; ring.style.borderRadius=s.r; }
+    place(stops[0]);
+    if(!reduce){ setInterval(function(){ i=(i+1)%stops.length; place(stops[i]); if(keyEl){keyEl.classList.add('press');setTimeout(function(){keyEl.classList.remove('press');},130);} },1500); }
+  }
+})();
+</script>
+<!-- ===== end accessibility demo ===== -->
+
+
+<style>
+  /* ===== PRIVACY REDACTION (public build) =====================================
+     The artefact is published to show HOW the review tool was built and what it
+     reasons about — not to publish a real company's audit data. Everything below
+     the WCAG explainer and the homepage focus demo is therefore visually
+     redacted. This blur is presentation only: the underlying figures and page
+     paths were ALSO neutralised at source, so nothing sensitive is recoverable
+     from view-source. */
+  .redact-note{display:flex;gap:.7rem;align-items:flex-start;max-width:74ch;
+    margin:1.6rem 0 1rem;padding:.9rem 1.05rem;border:1px solid var(--line);
+    border-left:4px solid var(--ink);border-radius:10px;background:var(--surface)}
+  .redact-note b{display:block;margin-bottom:.15rem}
+  .redact-note p{margin:0;font-size:.87rem;color:var(--muted);line-height:1.55}
+  /* Page identifiers ONLY. Severity, evidence tags (Measured / Assessed /
+     Deterministic) and the finding text all stay readable — they are the point
+     of publishing this. What is hidden is WHICH page each finding lands on. */
+  .is-redacted{filter:none}
+  .pathref,
+  #data th[scope="row"],
+  #data td:first-child,
+  #score .card .lab code{filter:blur(5px);user-select:none}
+  @media (prefers-reduced-motion:reduce){.is-redacted{filter:blur(7px)}}
+</style>
+<div class="redact-note">
+  <span aria-hidden="true">&#128274;</span>
+  <p><b>Page identifiers redacted.</b>
+  This reviewed a live corporate site, so the specific page behind each finding is
+  blurred and the underlying URLs replaced. Everything that shows the method is left
+  readable: the severity of each finding, whether it was measured deterministically or
+  assessed by judgement, and the finding itself.</p>
+</div>
+<div class="is-redacted">
+<section id="score" aria-labelledby="score-h">
+  <h2 id="score-h">Summary scorecard</h2>
+  <p class="legend">
+    <span><span class="tag t-measured">Measured</span> = direct tool output</span>
+    <span><span class="tag t-assessed">Assessed</span> = heuristic judgement</span>
+    <span><span class="tag t-na">Not measured</span> = source unavailable</span>
+  </p>
+  <div class="cards">
+    <div class="card"><div class="n">2</div><div class="lab">Critical axe violations in the sample: <code>image-alt</code> (9 nodes) and <code>aria-required-children</code> (6) <span class="tag t-measured">Measured</span></div></div>
+    <div class="card"><div class="n">9 / 10</div><div class="lab">Pages with the serious <code>link-name</code> violation <span class="tag t-measured">Measured</span></div></div>
+    <div class="card"><div class="n">15–32</div><div class="lab">Images with no <code>alt</code> attribute, per page <span class="tag t-measured">Measured</span></div></div>
+    <div class="card"><div class="n">6 / 10</div><div class="lab">Pages whose <code>&lt;title&gt;</code> is just "Company" <span class="tag t-measured">Measured</span></div></div>
+    <div class="card"><div class="n">2 / 10</div><div class="lab">Pages with no <code>&lt;h1&gt;</code> at all <span class="tag t-measured">Measured</span></div></div>
+    <div class="card"><div class="n">6–41</div><div class="lab">Contrast checks axe could not resolve (over imagery), per page <span class="tag t-assessed">Needs manual</span></div></div>
+    <div class="card"><div class="n">53–220</div><div class="lab">Interactive targets under 24×24px, per page <span class="tag t-assessed">Assessed</span></div></div>
+    <div class="card"><div class="n">n/a</div><div class="lab">Lighthouse / Core Web Vitals <span class="tag t-na">Not measured</span></div></div>
+  </div>
+  <h3>The one thing to fix this week</h3>
+  <p>Two cheap, high-leverage template fixes: (1) <strong>add <code>alt</code> text to content images</strong> — it is missing on 15–32 images per page and is a critical violation; and (2) <strong>add accessible names to the shared navigation icon links and the UIkit carousel arrows</strong> (<code>.uk-position-center-left/right</code>, <code>href="#"</code>), which is the serious violation on 9 of 10 pages. Both live in shared components/templates, so each fix clears many instances at once.</p>
+</section>
+
+<section id="a11y-auto" aria-labelledby="aa-h">
+  <h2 id="aa-h">Accessibility — automated <span class="tag t-measured">axe-core 4.10.2</span></h2>
+  <p>Run live against each rendered DOM, tags <code>wcag2a/aa</code>, <code>wcag21a/aa</code>, <code>wcag22aa</code> (axe injected via fetch+eval because the <code class="pathref">/global</code> CSP blocks external script tags). Automated tooling catches only a portion of WCAG issues; the heuristic section covers what it cannot.</p>
+
+  <details class="f" open>
+    <summary><span class="sev s-crit">◆ CRITICAL</span> <span class="tag t-measured">Measured</span> <span class="ttl">Content images without alt text — <code>image-alt</code> (9 nodes on programme-a); 15–32 images per page missing the attribute entirely</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>axe <code>image-alt</code> (critical) fired with 9 nodes on <code class="pathref">/education/page-23</code>. Separately, a DOM count shows 15–32 <code>&lt;img&gt;</code> with no <code>alt</code> attribute on every sampled page. Example: education card images under <code>.col-xl &gt; .img-fluid</code> (<code>assetFile/global/img/.../Grad…</code>).</dd>
+        <dt>Why</dt><dd>WCAG 1.1.1 Non-text Content (A). Screen-reader users get a filename or nothing for meaningful imagery.</dd>
+        <dt>Fix</dt><dd>Author meaningful <code>alt</code> for content images; explicit empty <code>alt=""</code> for decorative ones. Enforce a required alt field in the CMS/component so new content can't ship without it.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Deterministic</span> for the 9 axe nodes; <span class="tag t-measured">measured</span> DOM counts for the rest (some may be intentionally decorative — needs a content pass to split).</dd>
+        <dt>Owner</dt><dd>Content + engineering (CMS/template).</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f" open>
+    <summary><span class="sev s-crit">◆ CRITICAL</span> <span class="tag t-measured">Measured</span> <span class="ttl">ARIA container missing required children — <code>aria-required-children</code>, 6 nodes (product-i)</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>On <code class="pathref">/global/group-01/group-04/education</code>, axe flagged <code>aria-required-children</code> (critical, 6 nodes): an element with a composite ARIA role (e.g. list/tablist/menu) lacks the child roles that role requires.</dd>
+        <dt>Why</dt><dd>WCAG 1.3.1 (A) / 4.1.2 (A). Broken role relationships mislead assistive tech about structure.</dd>
+        <dt>Fix</dt><dd>Either supply the required child roles or remove the container role and rely on native semantics. Likely a UIkit/Bootstrap widget with a hand-added role.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Deterministic</span> — axe rule + node count.</dd>
+        <dt>Owner</dt><dd>Engineering.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f" open>
+    <summary><span class="sev s-high">▲ HIGH</span> <span class="tag t-measured">Measured</span> <span class="ttl">Links with no accessible name — <code>link-name</code> (serious) on 9/10 pages, 1–19 nodes each</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>Serious <code>link-name</code> on every page except the Display index. Node counts: programme-a 3, product-g 19, product-i 3, product-e 8, tool-a 3, business 1, solutions-b 1, product-d 11, product-f 12. Two recurring sources: header/nav icon links (<code>.nav-link</code> with a Font Awesome <code>&lt;i&gt;</code> and no text) and UIkit carousel controls (<code>.uk-position-center-left/right</code>, <code>href="#"</code>).</dd>
+        <dt>Why</dt><dd>WCAG 2.4.4 Link Purpose (A) and 4.1.2 Name, Role, Value (A).</dd>
+        <dt>Fix</dt><dd>Add <code>aria-label</code> (or visually-hidden text) to the nav icon links and slider arrows in the shared components. Slider arrows should also be real <code>&lt;button&gt;</code>s, not <code>href="#"</code> anchors.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Deterministic</span> — rule + node targets captured.</dd>
+        <dt>Owner</dt><dd>Engineering (shared nav + carousel component).</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-high">▲ HIGH</span> <span class="tag t-measured">Measured</span> <span class="ttl">Colour contrast — confirmed fails on product-g (3), plus 6–41 unresolved checks per page</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>axe reported 3 confirmed <code>color-contrast</code> violations (serious) on <code class="pathref">/education/group-01/page-15</code>. On top of that, every page carries a large "incomplete" contrast bucket (6 to 41 nodes) where axe could not compute contrast — typically text over photographic backgrounds.</dd>
+        <dt>Why</dt><dd>WCAG 1.4.3 Contrast (Minimum) AA. The confirmed three are violations; the incomplete buckets are unverified risk, not passes.</dd>
+        <dt>Fix</dt><dd>Fix the three confirmed nodes. Then run a manual/contrast-tool pass over hero and overlay text, or enforce a scrim token so text-on-image contrast is guaranteed.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Deterministic</span> for the 3; <span class="tag t-assessed">needs manual</span> for the incomplete buckets.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-measured">Measured</span> <span class="ttl">Other serious/ARIA issues: <code>frame-title</code>, <code>aria-prohibited-attr</code>, plus video without captions</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd><code>frame-title</code> (serious, tool-a — an iframe without a title), <code>aria-prohibited-attr</code> (serious on solutions-b; incomplete elsewhere), and <code>video-caption</code> in the incomplete bucket on product-g and tool-a (a video that may lack captions).</dd>
+        <dt>Why</dt><dd>WCAG 4.1.2 (A), 2.4.1 (A) for frame titles; 1.2.2 Captions (A) for video.</dd>
+        <dt>Fix</dt><dd>Title every iframe; remove ARIA attributes not permitted on their element's role; confirm captions on any informational video.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Deterministic</span> for the named violations; <span class="tag t-assessed">verify</span> the caption check.</dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="a11y-heur" aria-labelledby="ah-h">
+  <h2 id="ah-h">Accessibility — heuristic review (WCAG 2.2 AA) <span class="tag t-assessed">Assessed</span></h2>
+  <p>Human judgement over readable markup and computed layout. Concerns at named criteria, not confirmed violations, and not tested with assistive tech.</p>
+
+  <details class="f" open>
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-assessed">Assessed</span> <span class="ttl">Missing / zero H1: 2 of 10 pages have no H1; heading counts swing 25–251</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd><code class="pathref">/global/group-01/page-17</code> and <code class="pathref">/education/page-23</code> render zero <code>&lt;h1&gt;</code>. Heading totals range from 25 to 251 (the Display index has 251), with up to 5 level-skips per page.</dd>
+        <dt>Why</dt><dd>WCAG 1.3.1 (A) and 2.4.6 Headings and Labels (AA). A missing H1 and erratic levels weaken the outline screen-reader users rely on.</dd>
+        <dt>Fix</dt><dd>Exactly one H1 per page; bring heading levels into a sensible order; question whether the 251-heading index needs that many semantic headings.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-assessed">Heuristic</span> — counts measured; intent to confirm.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f" open>
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-assessed">Assessed</span> <span class="ttl">Target size: 53–220 interactive elements under 24×24px per page</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>Sub-24px interactive boxes per page: 53–62 on most templates, 220 on the Display index. Includes dense card grids, filter controls and icon links.</dd>
+        <dt>Why</dt><dd>WCAG 2.2 <strong>2.5.8 Target Size (Minimum), AA</strong>. Risk, not a confirmed fail — 2.5.8 exempts inline-text links and adequately spaced targets, which the raw count does not net out.</dd>
+        <dt>Fix</dt><dd>Audit the densest controls first (Display index, product grids). Hit 24px or ensure spacing offsets. Confirm against the exceptions before ticketing each.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-assessed">Heuristic</span> — bounding-box measurement; exception logic needs a human pass.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-assessed">Assessed</span> <span class="ttl">Form fields without a programmatic label (up to 14 on several pages)</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>14 unlabelled inputs on six pages, 1 on the rest. Concentrated in a shared component (likely the mega-nav search / region / filter cluster).</dd>
+        <dt>Why</dt><dd>WCAG 1.3.1 (A), 3.3.2 (A), 4.1.2 (A). Placeholders are not labels.</dd>
+        <dt>Fix</dt><dd>Label each control via <code>&lt;label for&gt;</code> or <code>aria-label</code>. Fix the shared component once. Confirm which of the 14 are genuine user inputs versus hidden/utility fields.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-assessed">Heuristic</span> — detector counts fields with no label/aria/wrapping label.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-low">● LOW</span> <span class="tag t-assessed">Assessed</span> <span class="ttl">Positive baseline: lang set, skip link present on every page</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>All 10 pages set <code>&lt;html lang="en"&gt;</code> (3.1.1) and expose a skip link (2.4.1). Good foundations.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-assessed">Heuristic</span> — observed in DOM.</dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="perf" aria-labelledby="p-h">
+  <h2 id="p-h">Performance — render-observed <span class="tag t-measured">browser network panel</span> <span class="tag t-na">not Lighthouse</span></h2>
+  <p><strong>No scores or Core Web Vitals here</strong> — PSI/Lighthouse was unreachable. Figures are observed from a single live render. Transfer bytes are cache-dependent; request counts, image weight and head-blocking counts are the stable signals. The <code class="pathref">/global</code> build is modern at the head level (0 render-blocking sync scripts, 2–3 stylesheets) — the performance story is <em>images</em>, not blocking scripts.</p>
+
+  <details class="f" open>
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-measured">Measured (render-observed)</span> <span class="ttl">Heavy image payloads and long load events on image-rich templates</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>Observed image transfer up to ~3.0MB (product-i) and ~0.6MB (product-g); load events of 17.9s (product-g) and 8.6s (product-f) this session. 40–140 images per page.</dd>
+        <dt>Why</dt><dd>Large, numerous images are the dominant cost on these pages. Load-event timings are single-render and network-variable, so treat as indicative, not a benchmark.</dd>
+        <dt>Fix</dt><dd>Right-size and compress hero/card imagery, serve modern formats, confirm lazy-loading below the fold. Validate with a real Lighthouse run — do not assume a number.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Render-observed</span>. Not a score.</dd>
+        <dt>Owner</dt><dd>Content + engineering.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-low">● LOW</span> <span class="tag t-measured">Measured (render-observed)</span> <span class="ttl">Head is well-optimised: 0 render-blocking sync scripts, 2–3 stylesheets</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>Every <code class="pathref">/global</code> page shipped zero synchronous head scripts and only 2–3 stylesheet links — markedly leaner than the <code class="pathref">/region</code> store. A genuine strength of this build.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Render-observed</span>.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-info">■ INFO</span> <span class="tag t-na">Not measured</span> <span class="ttl">Lighthouse scores &amp; Core Web Vitals — remediation path</span></summary>
+    <div class="body">
+      <dl>
+        <dt>Status</dt><dd>Not available this run; the PSI API returned empty/timeout via the only permitted fetch route.</dd>
+        <dt>To get real numbers</dt><dd>Run PSI from a reachable environment (web.dev/measure, PSI API in CI, or local <code>lighthouse</code> CLI) against this URL set. Field CWV needs CrUX/RUM, not a single render.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-na">Not measured</span> — left blank deliberately.</dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="ds-token" aria-labelledby="dt-h">
+  <h2 id="dt-h">Design-system token drift <span class="tag t-na">partial — Figma values unresolved</span></h2>
+  <p>A measured comparison against the governing Figma token set could not be completed; no values were invented. What can be reported is the site's internal consistency, measured from computed styles.</p>
+
+  <details class="f" open>
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-measured">Measured (internal)</span> <span class="ttl">Type scale is internally inconsistent across /global templates</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What (measured)</dt><dd>Body is consistently Open Sans, but base size and the heading scale drift between templates: body 16px on most pages, <strong>14px</strong> on the Display index and product-e; H1 rendered at 48px, 39.9px, 53.2px and 39.9px on different pages; H2 alternates between weight 700 and <strong>500</strong>, sizes 24.64–42px, and colour between <code>#222222</code>, <code>#404041</code> and <code>#000000</code>.</dd>
+        <dt>Why it matters</dt><dd>Fractional, per-template heading sizes and mixed weights/colours point to fluid type applied without a shared token contract. Even before comparing to Figma, the scale is not coherent across the sampled pages.</dd>
+        <dt>Fix</dt><dd>Pin the heading ramp and body base to design tokens; remove per-template overrides. Then compare against the DS type tokens once values are available.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Measured</span> internal inconsistency; <span class="tag t-na">drift vs Figma not measured</span>.</dd>
+      </dl>
+    </div>
+  </details>
+
+  <details class="f">
+    <summary><span class="sev s-info">■ INFO</span> <span class="tag t-na">Not measured</span> <span class="ttl">DS structure confirmed; token hex/size values could not be resolved</span></summary>
+    <div class="body">
+      <dl>
+        <dt>Confirmed</dt><dd>Both governing systems exist: "the business design system" and "the education design system", each with a <code>1-2. Semantic Color</code> collection (<code>brand color/Blue, Red, Sky, Gray, Brown</code>) on a shared "DS" foundation, alongside the other four product-line systems.</dd>
+        <dt>Blocker</dt><dd>Design-system search returns variable names only; resolving values needs <code>get_variable_defs</code> with node IDs, and the linked Business file exposes only a "Cover" page (tokens live in separate published libraries with no node-specific URL supplied).</dd>
+        <dt>To complete</dt><dd>Provide a node-specific Figma URL into each system's colour/type token frames, or an exported <code>tokens.json</code>. Then drift becomes measurable. Any measured drift must then be scoped by rollout status before being called a bug.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-na">Not measured</span>.</dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="ds-comp" aria-labelledby="dc-h">
+  <h2 id="dc-h">Design-system component parity <span class="tag t-assessed">Assessed</span></h2>
+  <details class="f" open>
+    <summary><span class="sev s-med">■ MEDIUM</span> <span class="tag t-assessed">Assessed</span> <span class="ttl">Shared nav + UIkit carousel components carry the accessibility debt</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd>The recurring serious issues cluster in shared components: the header/nav icon links (no accessible name) and the UIkit carousel arrows (<code>href="#"</code> anchors, no label). The ARIA-required-children and prohibited-attr issues also look like hand-roled widgets rather than DS-composed components.</dd>
+        <dt>Read</dt><dd>These read as bespoke or third-party (UIkit/Bootstrap) widgets sitting outside the design system rather than DS primitives with accessibility baked in. Rebuilding them as DS components with required label slots closes the a11y and parity gaps together.</dd>
+        <dt>Fix</dt><dd>Before proposing new Figma components, check whether DS icon-button and carousel/slider primitives already exist to extend. If they exist and are accessible, the gap is implementation, not the system.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-assessed">Heuristic</span> — not a measured component diff. No Figma edits proposed or made.</dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="content" aria-labelledby="c-h">
+  <h2 id="c-h">Content / IA <span class="tag t-measured">Measured</span></h2>
+  <details class="f" open>
+    <summary><span class="sev s-high">▲ HIGH</span> <span class="tag t-measured">Measured</span> <span class="ttl">6 of 10 pages have a placeholder &lt;title&gt; of just "Company"</span></summary>
+    <div class="body">
+      <dl>
+        <dt>What</dt><dd><code class="pathref">/global/business</code>, <code class="pathref">/business/group-05/page-14</code>, <code class="pathref">/products/group-03/page-21</code>, <code class="pathref">/business/group-06/page-20</code>, <code class="pathref">/products/group-07/education</code> and <code class="pathref">/education/page-23</code> all return <code>&lt;title&gt;Company&lt;/title&gt;</code>. The other four have proper descriptive titles (e.g. "Commercial Displays for Business Communication | Company Global").</dd>
+        <dt>Why</dt><dd>Damages SEO, the browser-tab/scan experience, and WCAG 2.4.2 Page Titled (A). Inconsistent generation suggests a template/data gap, not authoring choice.</dd>
+        <dt>Fix</dt><dd>Generate a descriptive, consistent title per page at the template level (e.g. <code>Page — Section — Company</code>). Treat the missing-title pages as a bug, not copy work.</dd>
+        <dt>Confidence</dt><dd><span class="tag t-measured">Measured</span> — titles captured per page.</dd>
+        <dt>Owner</dt><dd>Engineering + content/SEO.</dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="cro" aria-labelledby="cro-h">
+  <h2 id="cro-h">CRO / UX heuristics <span class="tag t-assessed">heuristic, not measured</span></h2>
+  <p>No analytics access. Nothing here is a measured conversion claim; each is grounded in a recognised usability principle and should be validated with data or testing before prioritising.</p>
+  <details class="f" open>
+    <summary><span class="sev s-low">● LOW</span> <span class="tag t-assessed">Heuristic</span> <span class="ttl">The Display index (251 headings, 220 small targets) likely overwhelms the scan</span></summary>
+    <div class="body">
+      <dl>
+        <dt>Observation</dt><dd><code class="pathref">/global/group-01/page-17</code> carries 251 headings, 140 images and 220 sub-24px targets, with no H1.</dd>
+        <dt>Principle</dt><dd>Hick's law / visual hierarchy — a dense, flat index slows the choice and the scan, and the missing H1 removes the anchor.</dd>
+        <dt>Suggested</dt><dd>Introduce clear primary grouping, a real H1, and progressive disclosure for the long tail. <span class="tag t-assessed">heuristic, not measured</span></dd>
+      </dl>
+    </div>
+  </details>
+  <details class="f">
+    <summary><span class="sev s-low">● LOW</span> <span class="tag t-assessed">Heuristic</span> <span class="ttl">Unlabelled icon links and carousel arrows cost clarity for everyone</span></summary>
+    <div class="body">
+      <dl>
+        <dt>Observation</dt><dd>The same nav icons and slider arrows behind the <code>link-name</code> violation give sighted users no hover/affordance text either.</dd>
+        <dt>Principle</dt><dd>Recognition over recall — labelled affordances reduce hesitation for all users.</dd>
+        <dt>Suggested</dt><dd>The accessibility label fix doubles as a usability win. <span class="tag t-assessed">heuristic, not measured</span></dd>
+      </dl>
+    </div>
+  </details>
+  <details class="f">
+    <summary><span class="sev s-low">● LOW</span> <span class="tag t-assessed">Heuristic</span> <span class="ttl">Heavy hero imagery may delay perceived load on entry pages</span></summary>
+    <div class="body">
+      <dl>
+        <dt>Observation</dt><dd>Multi-megabyte image payloads on landing/category pages (render-observed).</dd>
+        <dt>Principle</dt><dd>Perceived performance affects bounce on first impression.</dd>
+        <dt>Suggested</dt><dd>Prioritise above-the-fold image optimisation; confirm impact with real performance data. <span class="tag t-assessed">heuristic, not measured</span></dd>
+      </dl>
+    </div>
+  </details>
+</section>
+
+<section id="data" aria-labelledby="d-h">
+  <h2 id="d-h">Per-page data <span class="tag t-measured">Measured</span></h2>
+  <table>
+    <caption>All values measured live on 2026-06-09 against <code class="pathref">/global</code> (+ <code class="pathref">/education</code>); <code class="pathref">/region</code> excluded. "missAlt" = images with no alt attribute; "&lt;24px" = interactive targets under 24×24px; "noLabel" = inputs without a programmatic label; "axe viol." = confirmed violations (key rule ids); "cc?" = contrast checks axe could not resolve; "req" = requests; "load(ms)" = single-render load event (indicative, not Lighthouse).</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="l">Page (stratum)</th>
+        <th scope="col">H1</th><th scope="col">Headings</th><th scope="col">Skips</th>
+        <th scope="col">Imgs</th><th scope="col">missAlt</th>
+        <th scope="col">&lt;24px</th><th scope="col">noLabel</th>
+        <th scope="col">axe viol.</th><th scope="col">cc?</th>
+        <th scope="col">req</th><th scope="col">load(ms)</th><th scope="col">Title</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row" class="l">business (B)</th><td>1</td><td>42</td><td>3</td><td>94</td><td>24</td><td>53</td><td>14</td><td class="l">link-name×1</td><td>18</td><td>81</td><td>6774</td><td class="l">"Company"</td></tr>
+      <tr><th scope="row" class="l">business/group-05/page-14 (B)</th><td>1</td><td>37</td><td>3</td><td>72</td><td>23</td><td>53</td><td>14</td><td class="l">aria-prohibited, link-name</td><td>29</td><td>100</td><td>6432</td><td class="l">"Company"</td></tr>
+      <tr><th scope="row" class="l">business/group-01/group-02/page-01 (B)</th><td>1</td><td>128</td><td>2</td><td>78</td><td>23</td><td>53</td><td>14</td><td class="l">link-name×11</td><td>7</td><td>55</td><td>7063</td><td class="l">descriptive ✓</td></tr>
+      <tr><th scope="row" class="l">products/group-03/page-21 (B)</th><td>1</td><td>82</td><td>1</td><td>90</td><td>15</td><td>56</td><td>1</td><td class="l">link-name×12</td><td>16</td><td>45</td><td>8619</td><td class="l">"Company"</td></tr>
+      <tr><th scope="row" class="l">business/group-06/page-20 (B)</th><td>1</td><td>31</td><td>1</td><td>57</td><td>24</td><td>55</td><td>14</td><td class="l">link-name, frame-title</td><td>11</td><td>67</td><td>—*</td><td class="l">"Company"</td></tr>
+      <tr><th scope="row" class="l">education/group-01/page-15 (E)</th><td>1</td><td>86</td><td>2</td><td>105</td><td>15</td><td>62</td><td>14</td><td class="l">link-name×19, contrast×3</td><td>41</td><td>95</td><td>17860</td><td class="l">descriptive ✓</td></tr>
+      <tr><th scope="row" class="l">products/page-17 (E)</th><td>0</td><td>251</td><td>1</td><td>140</td><td>16</td><td>220</td><td>1</td><td class="l">none</td><td>10</td><td>48</td><td>3671</td><td class="l">descriptive ✓</td></tr>
+      <tr><th scope="row" class="l">products/group-07/education (E)</th><td>1</td><td>25</td><td>2</td><td>41</td><td>15</td><td>56</td><td>1</td><td class="l">link-name×8</td><td>6</td><td>63</td><td>5676</td><td class="l">"Company"</td></tr>
+      <tr><th scope="row" class="l">products/group-04/education (E)</th><td>1</td><td>32</td><td>5</td><td>48</td><td>15</td><td>56</td><td>1</td><td class="l">aria-required-children×6, link-name×3</td><td>20</td><td>81</td><td>4569</td><td class="l">descriptive ✓</td></tr>
+      <tr><th scope="row" class="l">education/page-23 (E)</th><td>0</td><td>40</td><td>1</td><td>55</td><td>32</td><td>59</td><td>14</td><td class="l">image-alt×9, link-name×3</td><td>33</td><td>65</td><td>6000</td><td class="l">"Company"</td></tr>
+    </tbody>
+  </table>
+  <p class="hint">* load event not captured on this page in-session. Critical violations are <code>image-alt</code> (programme-a) and <code>aria-required-children</code> (product-i).</p>
+</section>
+
+<section id="method" aria-labelledby="m-h">
+  <h2 id="m-h">Method, sources &amp; limitations</h2>
+  <h3>How each section was produced</h3>
+  <ul>
+    <li><strong>Accessibility (automated):</strong> axe-core 4.10.2 injected (fetch+eval, to satisfy the <code class="pathref">/global</code> CSP) into each rendered DOM; WCAG 2.0/2.1/2.2 A+AA rule tags. Deterministic where a rule id is cited.</li>
+    <li><strong>Accessibility (heuristic):</strong> human review of readable markup and computed layout. Concerns at named WCAG 2.2 criteria, not confirmed violations; not tested with assistive technology.</li>
+    <li><strong>Performance:</strong> render-observed from the browser network panel and Performance API on a single render. <strong>Not Lighthouse, not Core Web Vitals, not a score.</strong> PSI was unreachable.</li>
+    <li><strong>DS token drift:</strong> internal consistency measured from computed styles; Figma token values unresolved, so drift-vs-system is not measured (not estimated).</li>
+    <li><strong>DS component parity &amp; CRO/UX:</strong> heuristic, grounded in usability principles. No analytics; no conversion claims.</li>
+  </ul>
+  <h3>Scope, coverage &amp; honesty notes</h3>
+  <ul>
+    <li><strong>Scope corrected:</strong> this run is <code class="pathref">/global</code> (and the <code class="pathref">/education</code> and <code class="pathref">/business</code> paths it redirects to). The <code class="pathref">/region</code> store is excluded per instruction.</li>
+    <li><strong>10-page stratified sample</strong> (5 Business, 5 Education), spanning landing, solution, category, product and software templates. Representative of the shared <code class="pathref">/global</code> templates, not full coverage. For true site-wide coverage, feed a crawler/CI export into PSI + axe (the <code class="pathref">/global</code> sitemap was empty, so URLs were discovered by crawling the live nav).</li>
+    <li><code class="pathref">/global</code> is a Bootstrap/UIkit build, structurally different from the <code class="pathref">/region</code> Magento store; findings here do not transfer to <code class="pathref">/region</code>.</li>
+    <li>No Figma writes were made or proposed. No crawl outside the agreed set. robots.txt blocks Claude site-wide; this ran as an explicitly owner-authorised internal audit.</li>
+  </ul>
+  <p class="hint">Snapshot generated 2026-06-09. Point-in-time, not a live feed. Re-run to refresh.</p>
+</section>
+
+</div><!-- /.is-redacted -->
+</main>
+<footer>
+  <p>Company <code class="pathref">/global</code> web review — aggregate snapshot. Every figure carries its source: <span class="tag t-measured">Measured</span> from a cited tool, <span class="tag t-assessed">Assessed</span> by judgement, or <span class="tag t-na">Not measured</span> where a source was unavailable. Numbers are never estimated to fill a gap.</p>
+</footer>
+</div>
+</body>
+</html>
